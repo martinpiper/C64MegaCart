@@ -1,0 +1,11 @@
+https://www.mouser.sg/ProductDetail/Alliance-Memory/M29F160FT55N3E2?qs=vmHwEFxEFR%252BPKObcaS0Aqw%3D%3D
+https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf
+
+https://www.c64-wiki.com/wiki/Expansion_Port
+https://www.pcbway.com/project/shareproject/Commodore_64_Expansion_Port_Cartridge_Project_Development_PCB_85ba470a.html
+file:///C:/work/C64Docs/www.devili.iki.fi/Computers/Commodore/C64/Programmers_Reference/Chapter_6/page_366.html
+https://www.freepascal.org/~daniel/gmod2/
+https://www.lemon64.com/forum/viewtopic.php?t=78723
+https://www.c64-wiki.com/wiki/Expansion_Port
+https://pcbwayfile.s3-us-west-2.amazonaws.com/project/22/01/31/0238508138024.png
+https://www.pcbway.com/project/shareproject/Commodore_64_Expansion_Port_Cartridge_Project_Development_PCB_85ba470a.html
