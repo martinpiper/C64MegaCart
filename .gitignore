@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Project Backups
+*.sts
+*.EDF
+*.DO
+*.workspace
+*.rte
