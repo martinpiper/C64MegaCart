@@ -9,3 +9,17 @@ https://www.lemon64.com/forum/viewtopic.php?t=78723
 https://www.c64-wiki.com/wiki/Expansion_Port
 https://pcbwayfile.s3-us-west-2.amazonaws.com/project/22/01/31/0238508138024.png
 https://github.com/crystalct/GMagicODesk/blob/main/files/GMagicODesk.png
+
+C:\Work\C64Docs\C64PRG10_TXT.txt
+
+file:///C:/Work/C64Docs/www.devili.iki.fi/Computers/Commodore/C64/Programmers_Reference/Chapter_5/page_260.html
+C:\Work\C64Docs\unusedino.de\ec64\technical\ch07.htm
+C:\Work\C64Docs\unusedino.de\ec64\technical\project64\programmers_reference.htm
+
+
+Serial EPROM
+https://www.mouser.sg/ProductDetail/Microchip-Technology/93C66-E-P?qs=R9WqqQqCiv5iQJtg2YhRGQ%3D%3D
+https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS125ANSR?qs=SL3LIuy2dWyvKnv7tFWEOw%3D%3D
+https://www.mouser.sg/c/?q=BC557A
+https://www.mouser.sg/c/semiconductors/discrete-semiconductors/transistors/?q=BC857A&package%20%2F%20case=SOT-23
+https://www.mouser.sg/c/passive-components/resistors/film-resistors/metal-film-resistors-through-hole/?q=10k%20ohm&power%20rating=50%20mW%20%281%2F20%20W%29~~166%20mW%20%281%2F6%20W%29&resistance=10%20kOhms~~10.7%20kOhms&instock=y&sort=pricing&rp=passive-components%2Fresistors%2Ffilm-resistors%2Fmetal-film-resistors-through-hole%7C~Resistance%7C~Power%20Rating
