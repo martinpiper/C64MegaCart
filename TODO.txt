@@ -1,0 +1,10 @@
+* Currently there is one 8-bit latch for the whole bank register, in IO1
+	At power on, after _RESET, _GAME is high and _EXROM is low, giving 8KB ROML based cartridge
+	Adding another register in IO2 will allow the _GAME and _EXROM lines to be controlled
+	* It would be possible to set _GAME low and have _EXROM high (from IO2 register) only when A15 is set and R_W is low and when RGAME (IO2 register control GAME bit) is high and PHI2 is high
+		This would give ultimax mode and allow writes to $e000-$ffff to control the address (plus IO1 bank register) and data lines lines to the flash _WE (_RWE i.e. ROM _WE) signal
+		_ROMH would go straight to _RWE
+	Page 37 https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf says "Bus Read operations from any address always read the Status Register during Program
+and Erase operations."
+	>> Note: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7. After successful completion of the Program operation the
+memory returns to Read mode and Bus Read operations from the address just programmed output DQ7, not its complement.

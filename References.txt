@@ -1,5 +1,7 @@
 https://www.mouser.sg/ProductDetail/Alliance-Memory/M29F160FT55N3E2?qs=vmHwEFxEFR%252BPKObcaS0Aqw%3D%3D
 https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf
+	Commands 8-bit mode - page 31 / 57
+
 
 https://www.c64-wiki.com/wiki/Expansion_Port
 https://www.pcbway.com/project/shareproject/Commodore_64_Expansion_Port_Cartridge_Project_Development_PCB_85ba470a.html
@@ -9,6 +11,7 @@ https://www.lemon64.com/forum/viewtopic.php?t=78723
 https://www.c64-wiki.com/wiki/Expansion_Port
 https://pcbwayfile.s3-us-west-2.amazonaws.com/project/22/01/31/0238508138024.png
 https://github.com/crystalct/GMagicODesk/blob/main/files/GMagicODesk.png
+https://raw.githubusercontent.com/crystalct/GMagicODesk/refs/heads/main/files/GMagicODesk.png
 
 C:\Work\C64Docs\C64PRG10_TXT.txt
 
@@ -23,3 +26,11 @@ https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS125ANSR?qs=SL3LIuy2d
 https://www.mouser.sg/c/?q=BC557A
 https://www.mouser.sg/c/semiconductors/discrete-semiconductors/transistors/?q=BC857A&package%20%2F%20case=SOT-23
 https://www.mouser.sg/c/passive-components/resistors/film-resistors/metal-film-resistors-through-hole/?q=10k%20ohm&power%20rating=50%20mW%20%281%2F20%20W%29~~166%20mW%20%281%2F6%20W%29&resistance=10%20kOhms~~10.7%20kOhms&instock=y&sort=pricing&rp=passive-components%2Fresistors%2Ffilm-resistors%2Fmetal-film-resistors-through-hole%7C~Resistance%7C~Power%20Rating
+
+
+
+https://www.lemon64.com/forum/viewtopic.php?t=78108
+https://github.com/zeus074/c64-cartridge/blob/main/Schematic.pdf
+https://www.pcbway.com/project/shareproject/OpenC64Cart_V2__8K_.html
+
+https://github.com/SukkoPera/OpenC64Cart/blob/master/doc/schematic.pdf
