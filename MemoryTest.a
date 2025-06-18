@@ -1,0 +1,142 @@
+; Assemble the source with: ..\c64\acme.exe -v9 -f cbm -o MemoryTest.prg --lib ..\c64\ "MemoryTest.a"
+; Compress with: ..\C64\bin\LZMPi.exe -c64mbu MemoryTest.prg MemoryTest.prg $200
+; Run with: "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x MemoryTest.prg
+; C64 build and run: ..\c64\acme.exe -v9 -f cbm -o MemoryTest.prg --lib ..\c64\ "MemoryTest.a" && ..\C64\bin\LZMPi.exe -c64mbu MemoryTest.prg MemoryTest.prg $200 && "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x MemoryTest.prg
+; Emu build and debug: ..\c64\acme.exe -v9 -f cbm -o MemoryTest.prg --lib ..\c64\ "MemoryTest.a" && ..\C64\bin\LZMPi.exe -c64mbu MemoryTest.prg MemoryTest.prg $200 && MemoryTest.prg
+
+; Cartridge and RAM memory test. Allows the various RAM and ROM states to be displayed on screen and RAM write logic to be tested. Also works in ultimax mode.
+
+; Fire = Clear RAM at C64Cartridge_Lo_8K/BASICROM/C64LastPage
+; Left = Increment MemoryMappedIOArea1: From 0 to 7
+; Right = Increment MemoryMappedIOArea2: From 0 to 7
+; Down = Cycle ProcessorPort modes
+
+!initmem $20
+
+!source "stdlib/stdlib.a"
+
+
+*=$0200
+	lda #ProcessorPortDefault
+	jsr InitialiseMachine
+.l1
+kDisplayRows = VIC2ScreenCharsWidth*2
+	ldx #kDisplayRows
+.l2
+	ldy .sm4+1
+	lda .processorPortValues,y
+	sta ZPProcessorPort
+
+!macro MDisplayPage .addr , .y {
+	lda .addr-1,x
+	sta SCREENRAM-1+(VIC2ScreenCharsWidth*.y),x
+	lda .addr-1+256-kDisplayRows,x
+	sta SCREENRAM-1+(VIC2ScreenCharsWidth*(.y+2)),x
+}
+
+	+MDisplayPage C64Cartridge_Lo_8K , 0
+	+MDisplayPage BASICROM , 5
+	+MDisplayPage C64LastPage , 11
+
+	+MByteValueToAddress_A ProcessorPortDefault , ZPProcessorPort
+	inc VIC2BorderColour
+	dex
+	bne .l2
+	
+	; Continuously setup a visible screen with lower RAM based charset, for ultimax cartridges
+	+MByteValueToAddress_A VIC2ScreenControlVDefault , VIC2ScreenControlV
+	+MVIC2MemorySetup_ScreenChar_A SCREENRAM , Chars
+	sta VIC2MemorySetup
+	+MByteValueToAddress_A CIA2PortASerialBusVICBankDefault , CIA2PortASerialBusVICBank
+	+MByteValueToAddress_A VIC2ScreenControlHDefault , VIC2ScreenControlH
+	
+
+
+	+TestForPortBitsLoop_A CIA1KeyboardColumnJoystickA , JoystickBits_Fire , .o1
+
+	inc .sm1+1
+.sm1	lda #0
+	ldx #0
+.cl1
+	sta C64Cartridge_Lo_8K,x
+	sta BASICROM,x
+	sta C64LastPage,x
+	inx
+	bne .cl1
+	jmp .l1
+	
+.o1
+
+
+
+	+WaitForPortBitsLoop_A CIA1KeyboardColumnJoystickA , JoystickBits_Left , .o2
+	
+.sm2	lda #0
+	and #7
+	sta MemoryMappedIOArea1
+	sta SCREENRAM + (VIC2ScreenCharsWidth*4)
+	
+	inc .sm2+1
+	
+.o2
+
+
+
+	+WaitForPortBitsLoop_A CIA1KeyboardColumnJoystickA , JoystickBits_Right , .o3
+	
+.sm3	lda #0
+	and #7
+	sta MemoryMappedIOArea2
+	sta SCREENRAM + (VIC2ScreenCharsWidth*4) + 1
+	
+	inc .sm3+1
+
+.o3
+
+
+
+	+WaitForPortBitsLoop_A CIA1KeyboardColumnJoystickA , JoystickBits_Down , .o4
+	
+.sm4
+	ldx #0
+	inx
+	cpx #5
+	bne .nr1
+	ldx #0
+.nr1
+	stx .sm4+1
+	txa
+	asl
+	asl
+	asl
+	tay
+	
+!for .i , 8 {
+	lda .processorPortValuesDisplay + .i -1,y
+	sta SCREENRAM + (VIC2ScreenCharsWidth*4) + 4 + .i
+}
+
+.o4
+	jmp .l1
+
+.processorPortValues
+	!by ProcessorPortDefault , ProcessorPortAllRAMWithIO , ProcessorPortAllRAM , ProcessorPortKERNALWithIO , ProcessorPortCharROMBASICKERNAL
+.processorPortValuesDisplay
+	!scr "default "
+	!scr "ram io  "
+	!scr "all ram "
+	!scr "kernalio"
+	!scr "chrbskrn"
+
++MCheckNotInMemoryRange SCREENRAM,$ffff
+
+; Lowercase chars, for any ultimax mode carts
+*=$800
+Chars
+!bin "C:\VICE\C64\chargen",,VIC2MemorySetup_CharsSize
+	
+; There is RAM here after running, but might not be when a cartridge is banked in	
+Initialise_NoPreserveStack = 1
+Initialise_NoMACROWaitForTheLastScan = 1
+Initialise_NoIRQServiceRoutine = 1
+!source "stdlib/Initialise.a"
