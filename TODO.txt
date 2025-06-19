@@ -4,6 +4,8 @@
 	* It would be possible to set _GAME low and have _EXROM high (from IO2 register) only when A15 is set and R_W is low and when RGAME (IO2 register control GAME bit) is high and PHI2 is high
 		This would give ultimax mode and allow writes to $e000-$ffff to control the address (plus IO1 bank register) and data lines lines to the flash _WE (_RWE i.e. ROM _WE) signal
 		_ROMH would go straight to _RWE
+	Page 25 Command write signals, note _OE must be high during commands/programming
+	Page 31 programm command, chip erase, block erase etc
 	Page 37 https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf says "Bus Read operations from any address always read the Status Register during Program
 and Erase operations."
 	>> Note: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7. After successful completion of the Program operation the
