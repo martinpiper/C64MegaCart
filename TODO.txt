@@ -4,9 +4,16 @@
 	* It would be possible to set _GAME low and have _EXROM high (from IO2 register) only when A15 is set and R_W is low and when RGAME (IO2 register control GAME bit) is high and PHI2 is high
 		This would give ultimax mode and allow writes to $e000-$ffff to control the address (plus IO1 bank register) and data lines lines to the flash _WE (_RWE i.e. ROM _WE) signal
 		_ROMH would go straight to _RWE
-	Page 25 Command write signals, note _OE must be high during commands/programming
+	* Using M29F160FT55N3E2
+	Page 25 Command write signals
+		>> Note _OE must be high during commands/programming
+		>> The address inputs are latched by the command interface on the falling edge of CE# or WE#, whichever occurs last.
+		>> The data I/Os are latched by the command interface on the rising edge of CE# or WE#, whichever occurs first.
 	Page 31 programm command, chip erase, block erase etc
-	Page 37 https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf says "Bus Read operations from any address always read the Status Register during Program
-and Erase operations."
+	Page 37 https://www.mouser.sg/datasheet/2/12/M29FxxFT_FB-2999423.pdf says "Bus Read operations from any address always read the Status Register during Program and Erase operations."
+	Page 47 Documents VID voltage 11.5V-12.5V
+	Page 53 Gives program and erase timings, in seconds!
+		Chip erase typical 25 seconds, max 120 seconds!!
+		Block erase typcial 0.8 seconds, max 6 seconds!!
 	>> Note: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7. After successful completion of the Program operation the
 memory returns to Read mode and Bus Read operations from the address just programmed output DQ7, not its complement.
