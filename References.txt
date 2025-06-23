@@ -14,6 +14,7 @@ https://github.com/crystalct/GMagicODesk/blob/main/files/GMagicODesk.png
 https://raw.githubusercontent.com/crystalct/GMagicODesk/refs/heads/main/files/GMagicODesk.png
 
 C:\Work\C64Docs\C64PRG10_TXT.txt
+	Search for EXROM
 
 file:///C:/Work/C64Docs/www.devili.iki.fi/Computers/Commodore/C64/Programmers_Reference/Chapter_5/page_260.html
 C:\Work\C64Docs\unusedino.de\ec64\technical\ch07.htm

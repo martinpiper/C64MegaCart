@@ -17,3 +17,34 @@
 		Block erase typcial 0.8 seconds, max 6 seconds!!
 	>> Note: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7. After successful completion of the Program operation the
 memory returns to Read mode and Bus Read operations from the address just programmed output DQ7, not its complement.
+
+
+* Programming hardware
+	Output
+		A0..12
+		D0..7
+		_RESET
+		_RWE
+		_IO1
+		PHI2
+		R_W
+		_ROML
+		>> 27 signals definitely needed
+			Maybe +3 for A13..15
+			Maybe +1 for _ROMH
+			Maybe +1 for _IO2
+			>> 32 signals in total with the above optionals
+	Input
+		D0..7
+		RYBY
+		>> 8/9 signals
+	* Need to optionally tri-state the data output to allow reading the result from the external memory
+	* Test hardware:
+		>> Appropriate level shifters 3.3V to 5V
+		>> 8 signals for data in
+		>> 8 signals for data out
+		>> 4 x 74LS373 or 74LS374
+			> Each would need a signal, no real need for a decoder (74LS138) since signals are not a limiting factor
+		>> 4 signals for latch select, multiple latches can be set at the same time
+		>> 1 signal for data _OE
+		>> 25 signals
