@@ -21,19 +21,19 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 * Programming hardware
 	Output
-		A0..12
 		D0..7
-		_RESET
-		_RWE
+		A0..12
+		LATOUT0	=> _LATOUT0
+		RWE		=> _RWE
 		_IO1
+		_IO2
 		PHI2
 		R_W
 		_ROML
-		>> 27 signals definitely needed
-			Maybe +3 for A13..15
-			Maybe +1 for _ROMH
-			Maybe +1 for _IO2
-			>> 32 signals in total with the above optionals
+		_ROMH
+		>> 32 signals in total with the above optionals
+		_RESET
+
 	Input
 		D0..7
 		RYBY
@@ -43,8 +43,9 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		>> Appropriate level shifters 3.3V to 5V
 		>> 8 signals for data in
 		>> 8 signals for data out
-		>> 4 x 74LS373 or 74LS374
+		>> 5 x 74LS373 or 74LS374
 			> Each would need a signal, no real need for a decoder (74LS138) since signals are not a limiting factor
-		>> 4 signals for latch select, multiple latches can be set at the same time
-		>> 1 signal for data _OE
+		>> 5 signals for latch select, multiple latches can be set at the same time
 		>> 25 signals
+	* Note: The output latch must not be default to output, it must guard against logic contentions with the cart memory
+		U5 defaults to clear, for the cartridge _RESET

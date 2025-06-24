@@ -10,12 +10,13 @@ int main(void)
 	// Don't forget the gpio exportx in the project post build config
 	for (int i = 0; i < 8; i++)
 	{
-		pinMode(i, INPUT);
+		pinMode(i, INPUT);	// D0..7
 	}
-	for (int i = 0; i < 28; i++)
+	for (int i = 8; i < 27; i++)
 	{
-		pinMode(8+i, OUTPUT);
+		pinMode(i, OUTPUT);
 	}
+	pinMode(27, INPUT);	// RYBY
 
 	printf("Running...\n");
 	while (true)
@@ -36,7 +37,7 @@ int main(void)
 #endif
 
 #if 1
-		for (int i = 8; i < 28; i++)
+		for (int i = 8; i < 27; i++)
 		{
 			printf("on %d\n" , i);
 			digitalWrite(i, HIGH);
