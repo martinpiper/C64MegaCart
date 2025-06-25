@@ -35,3 +35,21 @@ https://github.com/zeus074/c64-cartridge/blob/main/Schematic.pdf
 https://www.pcbway.com/project/shareproject/OpenC64Cart_V2__8K_.html
 
 https://github.com/SukkoPera/OpenC64Cart/blob/master/doc/schematic.pdf
+
+
+Nice cartridge expander
+https://store.go4retro.com/x-pander-3-slot-cartridge-port-expander/
+Mentioned here: https://www.hackup.net/2018/06/c64-expansion-port-expander-research/
+Similar to: https://ar.c64.org/rrwiki/images/3/3b/Commodore_World_Issue07Vol02No02_EX2plus1_EX3.pdf
+	http://www.jbrain.com/pub/cbm/manuals/CMD_EX3_EX2+1_Manual.pdf
+	
+Card edge connectors, cartridge port basically:
+https://www.lemon64.com/forum/viewtopic.php?t=72533
+https://www.mouser.sg/c/connectors/card-edge-connectors/standard-card-edge-connectors/
+Was using this, but it is panel mount, not through hole: https://www.mouser.sg/ProductDetail/587-341-044-500-201
+Through hole, in stock: https://www.mouser.com/c/connectors/card-edge-connectors/standard-card-edge-connectors/?mounting%20style=Through%20Hole&number%20of%20positions=44%20Position&pitch=2.54%20mm&instock=y
+This seems to be the most in stock option: https://www.mouser.com/ProductDetail/TE-Connectivity/5530843-4?qs=CWN9I2qbSLsRSJz%252BQBuIeg%3D%3D
+	TE Connectivity 5530843-4
+	Datasheet: https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=5530843&DocType=Customer+Drawing&DocLang=English&PartCntxt=5530843-4&DocFormat=pdf
+	ROHS part is even more in stock but shows the wrong number of positions?: https://www.mouser.com/ProductDetail/TE-Connectivity/5-5530843-4?qs=U4pz39agNJAwfUW0CKQA7g%3D%3D
+		>> The datasheet shows it is 20x2 positions, so don't use this
