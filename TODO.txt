@@ -50,8 +50,10 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	* Note: The output latch must not be default to output, it must guard against logic contentions with the cart memory
 		U5 defaults to clear, for the cartridge _RESET
 
-	* Game and exrom can be read
+	* Done: Game and exrom can be read
+		PGAME and PEXROM through the level shifters, for safety
 	* And bigger holes on headers
-	* Also try to find a part for a better cart connector that can be soldered.
-	* And match the Pi pin out, the Pi has pins pointing upwards...
-
+		Using S-80-40 from the CONN-DIL40
+		https://www.mouser.sg/ProductDetail/Preci-dip/803-83-040-10-012101?qs=q5BRkYolQ3hpAcrUUpFpJg%3D%3D
+	* Done: Also try to find a part for a better cart connector that can be soldered.
+	* Done: And match the Pi pin out, the Pi has pins pointing upwards...
