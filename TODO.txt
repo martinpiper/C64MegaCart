@@ -49,3 +49,9 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		>> 25 signals
 	* Note: The output latch must not be default to output, it must guard against logic contentions with the cart memory
 		U5 defaults to clear, for the cartridge _RESET
+
+	* Game and exrom can be read
+	* And bigger holes on headers
+	* Also try to find a part for a better cart connector that can be soldered.
+	* And match the Pi pin out, the Pi has pins pointing upwards...
+
