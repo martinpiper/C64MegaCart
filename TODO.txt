@@ -22,7 +22,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 * Programming hardware
 	Output
 		D0..7
-		A0..12
+		A0..15
 		LATOUT0	=> _LATOUT0
 		RWE		=> _RWE
 		_IO1
