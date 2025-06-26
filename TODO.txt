@@ -54,6 +54,16 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		PGAME and PEXROM through the level shifters, for safety
 	* And bigger holes on headers
 		Using S-80-40 from the CONN-DIL40
-		https://www.mouser.sg/ProductDetail/Preci-dip/803-83-040-10-012101?qs=q5BRkYolQ3hpAcrUUpFpJg%3D%3D
 	* Done: Also try to find a part for a better cart connector that can be soldered.
 	* Done: And match the Pi pin out, the Pi has pins pointing upwards...
+	* Check the header pins are long, they seem to be short at the moment...
+		Check with existing purchases...
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-040-10-001101?qs=FtMuP6KVi2Q5EJHayha1aA%3D%3D
+			https://www.mouser.sg/ProductDetail/Preci-dip/803-87-040-10-001101?qs=q5BRkYolQ3gdlKuqU9%2F7IQ%3D%3D
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-008-53-001101?qs=q5BRkYolQ3gnRfYCsKSECg%3D%3D&countrycode=SG&currencycode=SGD
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-010-53-001101?qs=q5BRkYolQ3jHhHUKXrMBBA%3D%3D&countrycode=SG&currencycode=SGD
+				Wire wrap termination style!
+			Various preci-dip positions: https://www.mouser.sg/c/connectors/headers-wire-housings/?contact%20gender=Socket%20%28Female%29&m=Preci-dip&mounting%20angle=Straight&mounting%20style=Through%20Hole&pitch=2.54%20mm%20%280.1%20in%29&product=Headers&termination%20style=Wire%20Wrap&type=Socket&instock=y
+	* Done: Add debug header for the cartridge, large holes again
+	* Done: Add power socket, LED, capacitors
+	* Done: Add four indicator LEDs connected to the last latch
