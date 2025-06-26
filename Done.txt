@@ -1,0 +1,50 @@
+* Programming hardware
+	Output
+		D0..7
+		A0..15
+		LATOUT0	=> _LATOUT0
+		RWE		=> _RWE
+		_IO1
+		_IO2
+		PHI2
+		R_W
+		_ROML
+		_ROMH
+		>> 32 signals in total with the above optionals
+		_RESET
+
+	Input
+		D0..7
+		RYBY
+		>> 8/9 signals
+	* Need to optionally tri-state the data output to allow reading the result from the external memory
+	* Test hardware:
+		>> Appropriate level shifters 3.3V to 5V
+		>> 8 signals for data in
+		>> 8 signals for data out
+		>> 5 x 74LS373 or 74LS374
+			> Each would need a signal, no real need for a decoder (74LS138) since signals are not a limiting factor
+		>> 5 signals for latch select, multiple latches can be set at the same time
+		>> 25 signals
+	* Note: The output latch must not be default to output, it must guard against logic contentions with the cart memory
+		U5 defaults to clear, for the cartridge _RESET
+
+	* Done: Game and exrom can be read
+		PGAME and PEXROM through the level shifters, for safety
+	* And bigger holes on headers
+		Using S-80-40 from the CONN-DIL40
+	* Done: Also try to find a part for a better cart connector that can be soldered.
+	* Done: And match the Pi pin out, the Pi has pins pointing upwards...
+	* Check the header pins are long, they seem to be short at the moment...
+		Check with existing purchases...
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-040-10-001101?qs=FtMuP6KVi2Q5EJHayha1aA%3D%3D
+			https://www.mouser.sg/ProductDetail/Preci-dip/803-87-040-10-001101?qs=q5BRkYolQ3gdlKuqU9%2F7IQ%3D%3D
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-008-53-001101?qs=q5BRkYolQ3gnRfYCsKSECg%3D%3D&countrycode=SG&currencycode=SGD
+			https://www.mouser.sg/ProductDetail/Preci-dip/801-87-010-53-001101?qs=q5BRkYolQ3jHhHUKXrMBBA%3D%3D&countrycode=SG&currencycode=SGD
+				Wire wrap termination style!
+			Various preci-dip positions: https://www.mouser.sg/c/connectors/headers-wire-housings/?contact%20gender=Socket%20%28Female%29&m=Preci-dip&mounting%20angle=Straight&mounting%20style=Through%20Hole&pitch=2.54%20mm%20%280.1%20in%29&product=Headers&termination%20style=Wire%20Wrap&type=Socket&instock=y
+	* Done: Add debug header for the cartridge, large holes again
+	* Done: Add power socket, LED, capacitors
+	* Done: Add four indicator LEDs connected to the last latch
+
+** V1.0
