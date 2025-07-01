@@ -1,3 +1,4 @@
+// Page numbers reference "For M29F160FT55N3E2 - M29FxxFT_FB-2999423.pdf"
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
@@ -82,6 +83,7 @@ namespace DataLatchOut
 
 namespace C64Control
 {
+	const int kLatch = 3;
 	const int kDataLatchOut		= 0b00000001;
 	const int kFlashWriteEnable = 0b00000010;
 	const int kNotIO1			= 0b00000100;
@@ -93,80 +95,81 @@ namespace C64Control
 
 	void SetDataLatchOut(void)
 	{
-		sLatchStates[3] |= kDataLatchOut;
+		sLatchStates[kLatch] |= kDataLatchOut;
 	}
 	void ClearDataLatchOut(void)
 	{
-		sLatchStates[3] &= ~kDataLatchOut;
+		sLatchStates[kLatch] &= ~kDataLatchOut;
 	}
 
 	void SetFlashWrite(void)
 	{
-		sLatchStates[3] |= kFlashWriteEnable;
+		sLatchStates[kLatch] |= kFlashWriteEnable;
 	}
 	void ClearFlashWrite(void)
 	{
-		sLatchStates[3] &= ~kFlashWriteEnable;
+		sLatchStates[kLatch] &= ~kFlashWriteEnable;
 	}
 	// Note active low logic
 	void SetIO1(void)
 	{
-		sLatchStates[3] &= ~kNotIO1;
+		sLatchStates[kLatch] &= ~kNotIO1;
 	}
 	void ClearIO1(void)
 	{
-		sLatchStates[3] |= kNotIO1;
+		sLatchStates[kLatch] |= kNotIO1;
 	}
 	void SetIO2(void)
 	{
-		sLatchStates[3] &= ~kNotIO2;
+		sLatchStates[kLatch] &= ~kNotIO2;
 	}
 	void ClearIO2(void)
 	{
-		sLatchStates[3] |= kNotIO2;
+		sLatchStates[kLatch] |= kNotIO2;
 	}
 	void SetLowROM(void)
 	{
-		sLatchStates[3] &= ~kNotROML;
+		sLatchStates[kLatch] &= ~kNotROML;
 	}
 	void ClearLowROM(void)
 	{
-		sLatchStates[3] |= kNotROML;
+		sLatchStates[kLatch] |= kNotROML;
 	}
 	void SetHighROM(void)
 	{
-		sLatchStates[3] &= ~kNotROMH;
+		sLatchStates[kLatch] &= ~kNotROMH;
 	}
 	void ClearHighROM(void)
 	{
-		sLatchStates[3] |= kNotROMH;
+		sLatchStates[kLatch] |= kNotROMH;
 	}
 	// Normal logic again
 	void SetPHI2(void)
 	{
-		sLatchStates[3] |= kPHI2;
+		sLatchStates[kLatch] |= kPHI2;
 	}
 	void ClearPHI2(void)
 	{
-		sLatchStates[3] &= ~kPHI2;
+		sLatchStates[kLatch] &= ~kPHI2;
 	}
 	void SetRead(void)
 	{
-		sLatchStates[3] |= kReadNotWrite;
+		sLatchStates[kLatch] |= kReadNotWrite;
 	}
 	void SetWrite(void)
 	{
-		sLatchStates[3] &= ~kReadNotWrite;
+		sLatchStates[kLatch] &= ~kReadNotWrite;
 	}
 	void UpdateLatch(void)
 	{
-		SetOutputByte(sLatchStates[3]);
-		WriteLatch(3);
+		SetOutputByte(sLatchStates[kLatch]);
+		WriteLatch(kLatch);
 	}
 }
 
 namespace InterfaceControl
 {
+	const int kLatch = 4;
 	const int kNotReset			= 0b00000001;
 	const int kLED0				= 0b00010000;
 	const int kLED1				= 0b00100000;
@@ -176,49 +179,49 @@ namespace InterfaceControl
 	// Note active low logic
 	void SetReset(void)
 	{
-		sLatchStates[4] &= ~kNotReset;
+		sLatchStates[kLatch] &= ~kNotReset;
 	}
 	void ClearReset(void)
 	{
-		sLatchStates[4] |= ~kNotReset;
+		sLatchStates[kLatch] |= ~kNotReset;
 	}
 	// Normal logic
 	void SetLED0(void)
 	{
-		sLatchStates[4] |= kLED0;
+		sLatchStates[kLatch] |= kLED0;
 	}
 	void ClearLED0(void)
 	{
-		sLatchStates[4] &= ~kLED0;
+		sLatchStates[kLatch] &= ~kLED0;
 	}
 	void SetLED1(void)
 	{
-		sLatchStates[4] |= kLED1;
+		sLatchStates[kLatch] |= kLED1;
 	}
 	void ClearLED1(void)
 	{
-		sLatchStates[4] &= ~kLED1;
+		sLatchStates[kLatch] &= ~kLED1;
 	}
 	void SetLED2(void)
 	{
-		sLatchStates[4] |= kLED2;
+		sLatchStates[kLatch] |= kLED2;
 	}
 	void ClearLED2(void)
 	{
-		sLatchStates[4] &= ~kLED2;
+		sLatchStates[kLatch] &= ~kLED2;
 	}
 	void SetLED3(void)
 	{
-		sLatchStates[4] |= kLED3;
+		sLatchStates[kLatch] |= kLED3;
 	}
 	void ClearLED3(void)
 	{
-		sLatchStates[4] &= ~kLED3;
+		sLatchStates[kLatch] &= ~kLED3;
 	}
 	void UpdateLatch(void)
 	{
-		SetOutputByte(sLatchStates[4]);
-		WriteLatch(4);
+		SetOutputByte(sLatchStates[kLatch]);
+		WriteLatch(kLatch);
 	}
 }
 
@@ -242,8 +245,8 @@ int main(void)
 		pinMode(i, OUTPUT);
 	}
 	// Allows for these to be read from any plugged in cartridge
-	pinMode(26, INPUT);	// _EXROM
-	pinMode(25, INPUT);	// _GAME
+	pinMode(25, INPUT);	// _EXROM
+	pinMode(26, INPUT);	// _GAME
 	// Read the flash status bit, if connected
 	pinMode(27, INPUT);	// RYBY
 
@@ -267,8 +270,8 @@ int main(void)
 	InterfaceControl::ClearReset();
 	InterfaceControl::UpdateLatch();
 
-	printf("_GAME=%d\n", digitalRead(25));
-	printf("_EXROM=%d\n" , digitalRead(26));
+	printf("_GAME=%d\n", digitalRead(26));
+	printf("_EXROM=%d\n", digitalRead(25));
 
 	printf("Running...\n");
 	// Write some data to the flash, using the program command sequence
@@ -313,8 +316,13 @@ int main(void)
 	C64Control::UpdateLatch();
 
 	// Program command4 (the actual byte)
-	DataLatchOut::SetAddress(0x0);
-	DataLatchOut::SetData(0x00);
+	int theAddress = 0x0;
+	int theWriteValue = 0x00;
+	printf("theAddress = $%x theWriteValue = $%x\n", theAddress , theWriteValue);
+	DataLatchOut::SetAddress(theAddress);
+	DataLatchOut::SetData(theWriteValue);
+	// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
+	int waitWhileValue = (~theWriteValue) & 0x80;
 	C64Control::SetDataLatchOut();
 	C64Control::SetFlashWrite();
 	C64Control::UpdateLatch();
@@ -325,16 +333,24 @@ int main(void)
 	C64Control::ClearDataLatchOut();
 	C64Control::UpdateLatch();
 
-	// Now read the result
+	// Now prepare read the status register and result
 	C64Control::ClearDataLatchOut();
-	C64Control::SetLowROM();
 	C64Control::UpdateLatch();
 
-	while (true)
+	int statusRegister = 0;
+	int iterations = 0;
+	do
 	{
-		printf("GetInputByte $%x\n", GetInputByte());
+		C64Control::SetLowROM();
+		C64Control::UpdateLatch();
+		delay(1);	// Certainly more than the 20ns for a bus read
+		statusRegister = GetInputByte();
+		int ryby = digitalRead(27);
+		printf("statusRegister $%x RYBY %d wait while %d iterations %d\n", statusRegister, ryby, statusRegister & waitWhileValue, iterations++);
+		C64Control::ClearLowROM();
+		C64Control::UpdateLatch();
 		delay(250);
-	}
+	} while (statusRegister & waitWhileValue);
 
 	return 0;
 }
