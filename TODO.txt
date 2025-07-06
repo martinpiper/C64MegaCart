@@ -19,3 +19,8 @@
 memory returns to Read mode and Bus Read operations from the address just programmed output DQ7, not its complement.
 
 
+
+
+
+* Option to have _GAME and _EXROM dynamically low only for CPU read access, giving VIC the RAM under the cartridge
+	And only _GAME for $e000 option, giving ROM replacement as an option
