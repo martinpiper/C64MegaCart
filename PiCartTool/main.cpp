@@ -183,7 +183,7 @@ namespace InterfaceControl
 	}
 	void ClearReset(void)
 	{
-		sLatchStates[kLatch] |= ~kNotReset;
+		sLatchStates[kLatch] |= kNotReset;
 	}
 	// Normal logic
 	void SetLED0(void)
@@ -223,6 +223,39 @@ namespace InterfaceControl
 		SetOutputByte(sLatchStates[kLatch]);
 		WriteLatch(kLatch);
 	}
+}
+
+void SendChipCommand(int address, int data)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::SetDataLatchOut();
+	C64Control::SetFlashWrite();
+	C64Control::UpdateLatch();
+	C64Control::ClearFlashWrite();
+	C64Control::UpdateLatch();
+	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+	// TODO: See if both the write and the latch out can be cleared at the same time
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+}
+
+void WaitForStatusRegisterEqual(int waitFor)
+{
+	int statusRegister = 0;
+	int iterations = 0;
+	do
+	{
+		C64Control::SetLowROM();
+		C64Control::UpdateLatch();
+		delay(1);	// Certainly more than the 20ns for a bus read
+		statusRegister = GetInputByte();
+		int ryby = digitalRead(27);
+		printf("statusRegister $%x RYBY %d iterations %d\n", statusRegister, ryby, iterations++);
+		C64Control::ClearLowROM();
+		C64Control::UpdateLatch();
+		delay(250);
+	} while (statusRegister != waitFor);
 }
 
 int main(void)
@@ -270,87 +303,139 @@ int main(void)
 	InterfaceControl::ClearReset();
 	InterfaceControl::UpdateLatch();
 
+#if 0
+	while (true)
+	{
+		InterfaceControl::ClearLED0();
+		InterfaceControl::ClearLED1();
+		InterfaceControl::ClearLED2();
+		InterfaceControl::ClearLED3();
+		InterfaceControl::UpdateLatch();
+		InterfaceControl::SetLED0();
+		InterfaceControl::SetLED1();
+		InterfaceControl::SetLED2();
+		InterfaceControl::SetLED3();
+		InterfaceControl::UpdateLatch();
+		C64Control::SetIO1();
+		C64Control::UpdateLatch();
+		C64Control::ClearIO1();
+		C64Control::UpdateLatch();
+		C64Control::SetIO2();
+		C64Control::UpdateLatch();
+		C64Control::ClearIO2();
+		C64Control::UpdateLatch();
+		C64Control::SetLowROM();
+		C64Control::UpdateLatch();
+		C64Control::ClearLowROM();
+		C64Control::UpdateLatch();
+		C64Control::SetHighROM();
+		C64Control::UpdateLatch();
+		C64Control::ClearHighROM();
+		C64Control::UpdateLatch();
+	}
+#endif
+
+	InterfaceControl::SetLED0();
+	InterfaceControl::UpdateLatch();
+
 	printf("_GAME=%d\n", digitalRead(26));
 	printf("_EXROM=%d\n", digitalRead(25));
 
 	printf("Running...\n");
 	// Write some data to the flash, using the program command sequence
 
-	// Program command1
-	DataLatchOut::SetAddress(0xaaa);
-	DataLatchOut::SetData(0xaa);
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-	// TODO: See if both the write and the latch out can be cleared at the same time
-	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
+	// Erase commands
+	SendChipCommand(0xaaa , 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x80);
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x10);
+	WaitForStatusRegisterEqual(0xff);
 
-	// Program command2
-	DataLatchOut::SetAddress(0x555);
-	DataLatchOut::SetData(0x55);
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-	// TODO: See if both the write and the latch out can be cleared at the same time
-	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
+	FILE* fp = fopen("../../../scrollerbanks.bin" , "rb");
+	unsigned char bankData[8192];
 
-	// Program command3
-	DataLatchOut::SetAddress(0xaaa);
-	DataLatchOut::SetData(0xa0);
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-	// TODO: See if both the write and the latch out can be cleared at the same time
-	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
-
-	// Program command4 (the actual byte)
-	int theAddress = 0x0;
-	int theWriteValue = 0x00;
-	printf("theAddress = $%x theWriteValue = $%x\n", theAddress , theWriteValue);
-	DataLatchOut::SetAddress(theAddress);
-	DataLatchOut::SetData(theWriteValue);
-	// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
-	int waitWhileValue = (~theWriteValue) & 0x80;
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-	// TODO: See if both the write and the latch out can be cleared at the same time
-	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
-
-	// Now prepare read the status register and result
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
-
-	int statusRegister = 0;
-	int iterations = 0;
-	do
+	int bank = 0;
+	while (!feof(fp))
 	{
-		C64Control::SetLowROM();
+		int numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+		printf("Got bytes %d for bank %d\n", numBytes, bank);
+
+		// Set the bank register
+		DataLatchOut::SetAddress(0);
+		DataLatchOut::SetData(bank);
+		C64Control::SetIO1();
 		C64Control::UpdateLatch();
-		delay(1);	// Certainly more than the 20ns for a bus read
-		statusRegister = GetInputByte();
-		int ryby = digitalRead(27);
-		printf("statusRegister $%x RYBY %d wait while %d iterations %d\n", statusRegister, ryby, statusRegister & waitWhileValue, iterations++);
-		C64Control::ClearLowROM();
+
+		C64Control::SetDataLatchOut();
+		C64Control::SetWrite();
 		C64Control::UpdateLatch();
-		delay(250);
-	} while (statusRegister & waitWhileValue);
+		C64Control::SetRead();
+		C64Control::UpdateLatch();
+		// TODO: See if both the write and the latch out can be cleared at the same time
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+		C64Control::ClearIO1();
+		C64Control::UpdateLatch();
+
+		for (int address = 0; address < (int)sizeof(bankData); address++)
+		{
+			// Program commands
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xaaa, 0xa0);
+
+			// Program command4 (the actual byte)
+			DataLatchOut::SetAddress(address);
+			int theWriteValue = bankData[address];
+			DataLatchOut::SetData(theWriteValue);
+			// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
+			int waitWhileValue = (~theWriteValue) & 0x80;
+			C64Control::SetDataLatchOut();
+			C64Control::SetFlashWrite();
+			C64Control::UpdateLatch();
+			// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+			// TODO: See if both the write and the latch out can be cleared at the same time
+			C64Control::ClearFlashWrite();
+//			C64Control::UpdateLatch();
+			C64Control::ClearDataLatchOut();
+			C64Control::UpdateLatch();
+
+//			// Now prepare read the status register and result
+//			C64Control::ClearDataLatchOut();
+//			C64Control::UpdateLatch();
+
+			int statusRegister = 0;
+			int iterations = 0;
+			do
+			{
+				C64Control::SetLowROM();
+				C64Control::UpdateLatch();
+//				delay(1);	// Certainly more than the 20ns for a bus read
+				statusRegister = GetInputByte();
+//				int ryby = digitalRead(27);
+//				printf("statusRegister $%x RYBY %d wait while %d iterations %d\n", statusRegister, ryby, statusRegister & waitWhileValue, iterations++);
+				C64Control::ClearLowROM();
+				C64Control::UpdateLatch();
+//				delay(1);
+//				delay(250);
+				if (iterations++ > 100)
+				{
+					printf("There seems to be a problem verifying the byte at address $%04x\n", address);
+					exit(-1);
+				}
+			} while (statusRegister & waitWhileValue);
+
+			if ((address & 0xff) == 0)
+			{
+				printf(".");
+			}
+		}
+
+		printf("\nBank done\n");
+		bank++;
+	}
 
 	return 0;
 }
