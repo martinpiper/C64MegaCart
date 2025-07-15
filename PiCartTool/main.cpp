@@ -335,9 +335,6 @@ int main(void)
 	}
 #endif
 
-	InterfaceControl::SetLED0();
-	InterfaceControl::UpdateLatch();
-
 	printf("_GAME=%d\n", digitalRead(26));
 	printf("_EXROM=%d\n", digitalRead(25));
 
@@ -426,6 +423,9 @@ int main(void)
 		printf("\nBank done\n");
 		bank++;
 	}
+
+	InterfaceControl::SetLED0();
+	InterfaceControl::UpdateLatch();
 
 	return 0;
 }
