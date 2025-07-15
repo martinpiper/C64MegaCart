@@ -233,7 +233,7 @@ void SendChipCommand(int address, int data)
 	C64Control::SetFlashWrite();
 	C64Control::UpdateLatch();
 	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
+//	C64Control::UpdateLatch();
 	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
 	// TODO: See if both the write and the latch out can be cleared at the same time
 	C64Control::ClearDataLatchOut();
@@ -391,20 +391,13 @@ int main(void)
 			int theWriteValue = bankData[address];
 			DataLatchOut::SetData(theWriteValue);
 			// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
-			int waitWhileValue = (~theWriteValue) & 0x80;
 			C64Control::SetDataLatchOut();
 			C64Control::SetFlashWrite();
 			C64Control::UpdateLatch();
-			// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-			// TODO: See if both the write and the latch out can be cleared at the same time
 			C64Control::ClearFlashWrite();
 //			C64Control::UpdateLatch();
 			C64Control::ClearDataLatchOut();
 			C64Control::UpdateLatch();
-
-//			// Now prepare read the status register and result
-//			C64Control::ClearDataLatchOut();
-//			C64Control::UpdateLatch();
 
 			int statusRegister = 0;
 			int iterations = 0;
@@ -414,22 +407,19 @@ int main(void)
 				C64Control::UpdateLatch();
 //				delay(1);	// Certainly more than the 20ns for a bus read
 				statusRegister = GetInputByte();
-//				int ryby = digitalRead(27);
-//				printf("statusRegister $%x RYBY %d wait while %d iterations %d\n", statusRegister, ryby, statusRegister & waitWhileValue, iterations++);
 				C64Control::ClearLowROM();
 				C64Control::UpdateLatch();
-//				delay(1);
-//				delay(250);
 				if (iterations++ > 100)
 				{
 					printf("There seems to be a problem verifying the byte at address $%04x\n", address);
 					exit(-1);
 				}
-			} while (statusRegister & waitWhileValue);
+			} while (statusRegister != theWriteValue);
 
 			if ((address & 0xff) == 0)
 			{
 				printf(".");
+				fflush(stdout);
 			}
 		}
 
