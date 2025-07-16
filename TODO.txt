@@ -24,6 +24,12 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 * Option to have _GAME and _EXROM dynamically low only for CPU read access, giving VIC the RAM under the cartridge
 	And only _GAME for $e000 option, giving ROM replacement as an option
+	
+	
+	
+* C64 flash write option (_RWE), with writes to $e000-$ffff activing as flash write when in ultimax mode
+	Retain the pad/hole with _RWE and RYBY, it might be useful for the external programmer...
+
 
 
 
