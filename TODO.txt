@@ -37,3 +37,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	Ensure Scroller multidirection code is built in gmod2 mode
 	C:\Users\marti\Downloads\SDLVICE-3.7.1-win64-r43772\SDLVICE-3.7.1-win64-r43772\cartconv.exe -f c:\work\c64\Scroller\Scroller.crt
 	C:\Users\marti\Downloads\SDLVICE-3.7.1-win64-r43772\SDLVICE-3.7.1-win64-r43772\cartconv.exe -i c:\work\c64\Scroller\Scroller.crt -o c:\temp\scrollerbanks.bin
+
+
+
+
+* Fast read dump cartridge mode
