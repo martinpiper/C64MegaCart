@@ -43,9 +43,6 @@ void WriteLatch(int latch)
 	digitalWrite(16 + latch, LOW);
 	digitalWrite(16 + latch, LOW);
 	digitalWrite(16 + latch, HIGH);
-	digitalWrite(16 + latch, HIGH);
-	digitalWrite(16 + latch, HIGH);
-	digitalWrite(16 + latch, HIGH);
 }
 
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
