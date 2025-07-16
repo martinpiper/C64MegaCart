@@ -241,7 +241,7 @@ void SendChipCommand(int address, int data)
 	C64Control::UpdateLatch();
 //	delayMicroseconds(1);
 	C64Control::ClearFlashWrite();
-	C64Control::UpdateLatch();
+//	C64Control::UpdateLatch();
 	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
 	// TODO: See if both the write and the latch out can be cleared at the same time
 	C64Control::ClearDataLatchOut();
@@ -382,7 +382,7 @@ int main(void)
 		C64Control::UpdateLatch();
 		delayMicroseconds(1);
 		C64Control::SetRead();
-		C64Control::UpdateLatch();
+//		C64Control::UpdateLatch();
 		// TODO: See if both the write and the latch out can be cleared at the same time
 		C64Control::ClearDataLatchOut();
 		C64Control::UpdateLatch();
@@ -391,6 +391,18 @@ int main(void)
 
 		for (int address = 0; address < (int)sizeof(bankData); address++)
 		{
+			if ((address & 0xff) == 0)
+			{
+				printf(".");
+				fflush(stdout);
+			}
+
+			// If it's going to be the same as an erased flash byte then skip it :)
+			if (bankData[address] == 0xff)
+			{
+				continue;
+			}
+
 			// Program commands
 			SendChipCommand(0xaaa, 0xaa);
 			SendChipCommand(0x555, 0x55);
@@ -406,7 +418,7 @@ int main(void)
 			C64Control::UpdateLatch();
 			delayMicroseconds(1);
 			C64Control::ClearFlashWrite();
-			C64Control::UpdateLatch();
+//			C64Control::UpdateLatch();
 			C64Control::ClearDataLatchOut();
 			C64Control::UpdateLatch();
 
@@ -427,12 +439,6 @@ int main(void)
 					exit(-1);
 				}
 			} while (statusRegister != theWriteValue);
-
-			if ((address & 0xff) == 0)
-			{
-				printf(".");
-				fflush(stdout);
-			}
 		}
 
 		printf("\nBank done\n");
