@@ -29,7 +29,6 @@ void SetOutputByte(int value)
 		if (sCachedSignals[i] != intendedSignal)
 		{
 			digitalWrite(i, intendedSignal ? HIGH : LOW);
-			digitalWrite(i, intendedSignal ? HIGH : LOW);
 			sCachedSignals[i] = intendedSignal;
 		}
 
