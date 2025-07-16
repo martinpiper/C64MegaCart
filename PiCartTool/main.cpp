@@ -26,8 +26,9 @@ void SetOutputByte(int value)
 	for (int i = 8; i < 16; i++)
 	{
 		int intendedSignal = value & 0x01;
-		if (sCachedSignals[i] != intendedSignal)
+//		if (sCachedSignals[i] != intendedSignal)
 		{
+			digitalWrite(i, intendedSignal ? HIGH : LOW);
 			digitalWrite(i, intendedSignal ? HIGH : LOW);
 			sCachedSignals[i] = intendedSignal;
 		}
@@ -39,6 +40,12 @@ void SetOutputByte(int value)
 void WriteLatch(int latch)
 {
 	digitalWrite(16 + latch, LOW);
+	digitalWrite(16 + latch, LOW);
+	digitalWrite(16 + latch, LOW);
+	digitalWrite(16 + latch, LOW);
+	digitalWrite(16 + latch, HIGH);
+	digitalWrite(16 + latch, HIGH);
+	digitalWrite(16 + latch, HIGH);
 	digitalWrite(16 + latch, HIGH);
 }
 
@@ -232,8 +239,9 @@ void SendChipCommand(int address, int data)
 	C64Control::SetDataLatchOut();
 	C64Control::SetFlashWrite();
 	C64Control::UpdateLatch();
+	delayMicroseconds(1);
 	C64Control::ClearFlashWrite();
-//	C64Control::UpdateLatch();
+	C64Control::UpdateLatch();
 	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
 	// TODO: See if both the write and the latch out can be cleared at the same time
 	C64Control::ClearDataLatchOut();
@@ -261,7 +269,7 @@ void WaitForStatusRegisterEqual(int waitFor)
 int main(void)
 {
 	printf("wiringPiSetupSys\n");
-	wiringPiSetupSys();
+	wiringPiSetupGpio();
 	for (int i = 0; i < 28; i++)
 	{
 		sCachedSignals[i] = 0;
@@ -357,6 +365,10 @@ int main(void)
 	while (!feof(fp))
 	{
 		int numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+		if (numBytes <= 0)
+		{
+			break;
+		}
 		printf("Got bytes %d for bank %d\n", numBytes, bank);
 
 		// Set the bank register
@@ -368,6 +380,7 @@ int main(void)
 		C64Control::SetDataLatchOut();
 		C64Control::SetWrite();
 		C64Control::UpdateLatch();
+		delayMicroseconds(1);
 		C64Control::SetRead();
 		C64Control::UpdateLatch();
 		// TODO: See if both the write and the latch out can be cleared at the same time
@@ -391,8 +404,9 @@ int main(void)
 			C64Control::SetDataLatchOut();
 			C64Control::SetFlashWrite();
 			C64Control::UpdateLatch();
+			delayMicroseconds(1);
 			C64Control::ClearFlashWrite();
-//			C64Control::UpdateLatch();
+			C64Control::UpdateLatch();
 			C64Control::ClearDataLatchOut();
 			C64Control::UpdateLatch();
 
@@ -402,7 +416,8 @@ int main(void)
 			{
 				C64Control::SetLowROM();
 				C64Control::UpdateLatch();
-//				delay(1);	// Certainly more than the 20ns for a bus read
+//				delay(0);	// Certainly more than the 20ns for a bus read
+				delayMicroseconds(1);
 				statusRegister = GetInputByte();
 				C64Control::ClearLowROM();
 				C64Control::UpdateLatch();
