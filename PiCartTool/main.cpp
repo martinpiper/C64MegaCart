@@ -26,7 +26,7 @@ void SetOutputByte(int value)
 	for (int i = 8; i < 16; i++)
 	{
 		int intendedSignal = value & 0x01;
-//		if (sCachedSignals[i] != intendedSignal)
+		if (sCachedSignals[i] != intendedSignal)
 		{
 			digitalWrite(i, intendedSignal ? HIGH : LOW);
 			digitalWrite(i, intendedSignal ? HIGH : LOW);
