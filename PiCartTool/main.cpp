@@ -239,7 +239,7 @@ void SendChipCommand(int address, int data)
 	C64Control::SetDataLatchOut();
 	C64Control::SetFlashWrite();
 	C64Control::UpdateLatch();
-	delayMicroseconds(1);
+//	delayMicroseconds(1);
 	C64Control::ClearFlashWrite();
 	C64Control::UpdateLatch();
 	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
