@@ -425,7 +425,10 @@ int main(void)
 				C64Control::SetLowROM();
 				C64Control::UpdateLatch();
 //				delay(0);	// Certainly more than the 20ns for a bus read
-				delayMicroseconds(1);
+				if (iterations > 50)
+				{
+					delayMicroseconds(1);
+				}
 				statusRegister = GetInputByte();
 				C64Control::ClearLowROM();
 				C64Control::UpdateLatch();
