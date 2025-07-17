@@ -1,0 +1,6 @@
+﻿Category,Quantity,References,Value,Stock Code,Description,PCB Package,Placed
+Capacitors,1,C1,CL05B104KO5NNNC,https://www.mouser.sg/ProductDetail/Samsung-Electro-Mechanics/CL05B104KO5NNNC?qs=hqM3L16%252BxlfT2SKOuAUq6Q%3D%3D,Samsung Electro-Mechanics CL05B104KO5NNNC 100nF Multilayer Ceramic Capacitor MLCC 16V dc +/-10% Tolerance SMD,CAPC1005X55N,Top Copper
+Integrated Circuits,1,U1,M29F160FT55N3E2,https://www.mouser.sg/ProductDetail/Alliance-Memory/M29F160FT55N3E2?qs=vmHwEFxEFR%252BPKObcaS0Aqw%3D%3D,NOR Flash,SOP50P2000X120-48N,Top Copper
+Integrated Circuits,2,"U2,U3",74273,https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS273NSR?qs=SL3LIuy2dWxsq%2FCTeVMKZg%3D%3D,Octal D-Type Positive-Edge-Triggered Flip-Flops With Clear,SOIC127P780X200-20N-CAP,Top Copper
+Integrated Circuits,2,"U4,U5",74S139,https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS139ADR?qs=SL3LIuy2dWwpYzaAOf%252BnlA%3D%3D,Dual 2-Line to 4-Line Decoders/Demultiplexers,SOIC127P600X175-16N-CAP,Top Copper
+Capacitors,4,One 100nF (0.1uF) capacitor for SMT ICs marked with extra SDC near pin 1,CL05B104KO5NNNC,https://www.mouser.sg/ProductDetail/Samsung-Electro-Mechanics/CL05B104KO5NNNC?qs=hqM3L16%252BxlfT2SKOuAUq6Q%3D%3D,Decoupling capacitors for each SDC component,All with suffix -CAP,Top Copper

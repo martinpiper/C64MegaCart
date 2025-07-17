@@ -403,3 +403,4 @@ FodyWeavers.xsd
 *.workspace
 *.rte
 /V1.0/Project Backups
+/V2.0/Project Backups
