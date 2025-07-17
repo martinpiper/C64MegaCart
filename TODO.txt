@@ -42,6 +42,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * Fast read dump cartridge mode
+	Dump _GAME and _EXROM (and banks?) with PHI2 hi (CPU) and lo (VIC)
+	
 
 
 
@@ -68,3 +70,16 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		https://wiki.icomp.de/w/images/d/de/Cart_case_bottom.png
 		https://wiki.icomp.de/wiki/C64_Cartridge_Cases
 	* Done: Chamfer card edge
+	* Done: _EXROM disable logic
+		* Software enable/disable _EXROM write $80 to $dfxx
+			Defaults to $00 (enabling _EXROM = 0)
+	* Done: Flash write logic
+		* Flash write sequence:
+			Run code in RAM at 0-$fff
+			Write 8K bank using $dexx
+			$dfxx = $40 : _EXROM=0 and REQFLASH=1
+			Write erase chip/bank command bytes to $e000-$ffff
+			Read status from $8000-$9fff, until $ff, repeat if needed
+			Write program command bytes to $e000-$ffff
+			Write final data to $e000-$ffff range
+			Read back correct final data from $8000-$9fff, retry if needed
