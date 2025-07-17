@@ -67,4 +67,4 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		References: https://github.com/bwack/C64-cartridge-template-kicad5
 		https://wiki.icomp.de/w/images/d/de/Cart_case_bottom.png
 		https://wiki.icomp.de/wiki/C64_Cartridge_Cases
-	* Chamfer
+	* Done: Chamfer card edge
