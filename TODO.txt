@@ -63,5 +63,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 * MegaCart V2.0
 	* Board edge for cart case
-	* Central mounting hole, for cart case
-	
+	* Done : Central mounting hole, for cart case
+		References: https://github.com/bwack/C64-cartridge-template-kicad5
+		https://wiki.icomp.de/w/images/d/de/Cart_case_bottom.png
+		https://wiki.icomp.de/wiki/C64_Cartridge_Cases
+	* Chamfer
