@@ -41,13 +41,6 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
-* Fast read dump cartridge mode
-	Dump _GAME and _EXROM (and banks?) with PHI2 hi (CPU) and lo (VIC)
-	
-
-
-
-
 * Level convertors can be replaced with on-board circuitry
 	Part BSS138
 		https://www.mouser.sg/ProductDetail/SparkFun/BOB-12009?qs=WyAARYrbSnb%252BGYLWggQnjQ%3D%3D

@@ -262,7 +262,7 @@ void WaitForStatusRegisterEqual(int waitFor)
 	} while (statusRegister != waitFor);
 }
 
-int main(void)
+void InitDevice(void)
 {
 	printf("wiringPiSetupSys\n");
 	wiringPiSetupGpio();
@@ -286,7 +286,10 @@ int main(void)
 	pinMode(26, INPUT);	// _GAME
 	// Read the flash status bit, if connected
 	pinMode(27, INPUT);	// RYBY
+}
 
+void InitCartTool(void)
+{
 	InterfaceControl::SetReset();
 	InterfaceControl::ClearLED0();
 	InterfaceControl::ClearLED1();
@@ -306,6 +309,30 @@ int main(void)
 
 	InterfaceControl::ClearReset();
 	InterfaceControl::UpdateLatch();
+}
+
+void SetDataIO1(int address, int data)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::SetIO1();
+	C64Control::UpdateLatch();
+
+	C64Control::SetDataLatchOut();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+	delayMicroseconds(1);
+	C64Control::SetRead();
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+	C64Control::ClearIO1();
+	C64Control::UpdateLatch();
+}
+
+int main(void)
+{
+	InitDevice();
+	InitCartTool();
 
 #if 0
 	while (true)
@@ -339,14 +366,25 @@ int main(void)
 	}
 #endif
 
+#if 0
+	InterfaceControl::SetLED0();
+	InterfaceControl::SetLED1();
+	InterfaceControl::SetLED2();
+	InterfaceControl::SetLED3();
+	InterfaceControl::UpdateLatch();
+#endif
+
 	printf("_GAME=%d\n", digitalRead(26));
 	printf("_EXROM=%d\n", digitalRead(25));
 
-	printf("Running...\n");
-	// Write some data to the flash, using the program command sequence
+	unsigned char bankData[8192];
+	FILE* fp;
+
+	printf("Writing...\n");
+	// Write some data to the flash, using the erase and program command sequence
 
 	// Erase commands
-	SendChipCommand(0xaaa , 0xaa);
+	SendChipCommand(0xaaa, 0xaa);
 	SendChipCommand(0x555, 0x55);
 	SendChipCommand(0xaaa, 0x80);
 	SendChipCommand(0xaaa, 0xaa);
@@ -354,8 +392,7 @@ int main(void)
 	SendChipCommand(0xaaa, 0x10);
 	WaitForStatusRegisterEqual(0xff);
 
-	FILE* fp = fopen("../../../scrollerbanks.bin" , "rb");
-	unsigned char bankData[8192];
+	fp = fopen("../../../scrollerbanks.bin" , "rb");
 
 	int bank = 0;
 	while (!feof(fp))
@@ -368,22 +405,7 @@ int main(void)
 		printf("Got bytes %d for bank %d\n", numBytes, bank);
 
 		// Set the bank register
-		DataLatchOut::SetAddress(0);
-		DataLatchOut::SetData(bank);
-		C64Control::SetIO1();
-		C64Control::UpdateLatch();
-
-		C64Control::SetDataLatchOut();
-		C64Control::SetWrite();
-		C64Control::UpdateLatch();
-		delayMicroseconds(1);
-		C64Control::SetRead();
-//		C64Control::UpdateLatch();
-		// TODO: See if both the write and the latch out can be cleared at the same time
-		C64Control::ClearDataLatchOut();
-		C64Control::UpdateLatch();
-		C64Control::ClearIO1();
-		C64Control::UpdateLatch();
+		SetDataIO1(0, bank);
 
 		for (int address = 0; address < (int)sizeof(bankData); address++)
 		{
@@ -443,6 +465,39 @@ int main(void)
 		printf("\nBank done\n");
 		bank++;
 	}
+
+
+	printf("Reading...\n");
+	fp = fopen("../../../readdata.bin", "wb");
+	for (int bank = 0; bank < 256; bank++)
+	{
+		printf("Bank %d\n", bank);
+		SetDataIO1(0, bank);
+		for (int address = 0; address < (int)sizeof(bankData); address++)
+		{
+			if ((address & 0xff) == 0)
+			{
+				printf(".");
+				fflush(stdout);
+			}
+
+			DataLatchOut::SetAddress(address);
+			C64Control::ClearFlashWrite();
+			C64Control::ClearDataLatchOut();
+
+			C64Control::SetLowROM();
+			C64Control::UpdateLatch();
+			delayMicroseconds(1);	// Needed for reliable read
+			bankData[address] = (unsigned char)GetInputByte();
+			C64Control::ClearLowROM();
+			C64Control::UpdateLatch();
+		}
+
+		fwrite(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+		printf("\nBank done\n");
+	}
+	fclose(fp);
+
 
 	InterfaceControl::SetLED0();
 	InterfaceControl::UpdateLatch();
