@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
+#include <atomic>
+#include <algorithm>
 
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
 
@@ -19,7 +21,7 @@ int GetInputByte(void)
 	return ret;
 }
 
-static int sCachedSignals[28];
+static volatile std::atomic<int> sCachedSignals[28];
 
 void SetOutputByte(int value)
 {
@@ -380,6 +382,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
+#if 0
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
 
@@ -465,9 +468,10 @@ int main(void)
 		printf("\nBank done\n");
 		bank++;
 	}
-
+#endif
 
 	printf("Reading...\n");
+	int maxDelayNeeded = 0;
 	fp = fopen("../../../readdata.bin", "wb");
 	for (int bank = 0; bank < 256; bank++)
 	{
@@ -475,28 +479,46 @@ int main(void)
 		SetDataIO1(0, bank);
 		for (int address = 0; address < (int)sizeof(bankData); address++)
 		{
-			if ((address & 0xff) == 0)
+/*
+			if ((address & 0x3ff) == 0)
 			{
 				printf(".");
 				fflush(stdout);
 			}
+*/
 
 			DataLatchOut::SetAddress(address);
 			C64Control::ClearFlashWrite();
 			C64Control::ClearDataLatchOut();
 
-			C64Control::SetLowROM();
-			C64Control::UpdateLatch();
-			delayMicroseconds(1);	// Needed for reliable read
-			bankData[address] = (unsigned char)GetInputByte();
-			C64Control::ClearLowROM();
-			C64Control::UpdateLatch();
+			// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+			int gotPrevious = -1;
+			int gotNow = -2;
+			int progressiveDelay = 0;
+			while (gotPrevious != gotNow)
+			{
+				gotPrevious = gotNow;
+
+				C64Control::SetLowROM();
+				C64Control::UpdateLatch();
+				if (progressiveDelay >= 2)
+				{
+					delayMicroseconds(progressiveDelay/2);
+					maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay/2);
+				}
+				gotNow = (unsigned char)GetInputByte();
+				C64Control::ClearLowROM();
+				C64Control::UpdateLatch();
+				progressiveDelay++;
+			}
+			bankData[address] = (unsigned char)gotNow;
 		}
 
 		fwrite(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
 		printf("\nBank done\n");
 	}
 	fclose(fp);
+	printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
 
 	InterfaceControl::SetLED0();

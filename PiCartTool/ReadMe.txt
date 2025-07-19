@@ -44,3 +44,8 @@ git clone https://github.com/WiringPi/WiringPi.git
 cd WiringPi
 ./build
 
+
+
+cd projects/PiCartTool/bin/ARM/Release/
+time ./PiCartTool.out
+diff -q ../../../scrollerbanks.bin ../../../readdata.bin

@@ -57,8 +57,10 @@
       <LibraryDependencies>wiringPi</LibraryDependencies>
     </Link>
     <RemotePostBuildEvent>
-      <Command>gpio export 0 in &amp;&amp; gpio export 1 in &amp;&amp; gpio export 2 in &amp;&amp; gpio export 3 in &amp;&amp; gpio export 4 in &amp;&amp; gpio export 5 in &amp;&amp; gpio export 6 in &amp;&amp; gpio export 7 in &amp;&amp; gpio export 8 out &amp;&amp; gpio export 9 out &amp;&amp; gpio export 10 out &amp;&amp; gpio export 11 out &amp;&amp; gpio export 12 out &amp;&amp; gpio export 13 out &amp;&amp; gpio export 14 out &amp;&amp; gpio export 15 out &amp;&amp; gpio export 16 out &amp;&amp; gpio export 17 out &amp;&amp; gpio export 18 out &amp;&amp; gpio export 19 out &amp;&amp; gpio export 20 out &amp;&amp; gpio export 21 out &amp;&amp; gpio export 22 out &amp;&amp; gpio export 23 out &amp;&amp; gpio export 24 out &amp;&amp; gpio export 25 out &amp;&amp; gpio export 26 out &amp;&amp; gpio export 27 in</Command>
-      <Message>export pins</Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -66,8 +68,10 @@
       <LibraryDependencies>wiringPi</LibraryDependencies>
     </Link>
     <RemotePostBuildEvent>
-      <Command>gpio export 0 in &amp;&amp; gpio export 1 in &amp;&amp; gpio export 2 in &amp;&amp; gpio export 3 in &amp;&amp; gpio export 4 in &amp;&amp; gpio export 5 in &amp;&amp; gpio export 6 in &amp;&amp; gpio export 7 in &amp;&amp; gpio export 8 out &amp;&amp; gpio export 9 out &amp;&amp; gpio export 10 out &amp;&amp; gpio export 11 out &amp;&amp; gpio export 12 out &amp;&amp; gpio export 13 out &amp;&amp; gpio export 14 out &amp;&amp; gpio export 15 out &amp;&amp; gpio export 16 out &amp;&amp; gpio export 17 out &amp;&amp; gpio export 18 out &amp;&amp; gpio export 19 out &amp;&amp; gpio export 20 out &amp;&amp; gpio export 21 out &amp;&amp; gpio export 22 out &amp;&amp; gpio export 23 out &amp;&amp; gpio export 24 out &amp;&amp; gpio export 25 out &amp;&amp; gpio export 26 out &amp;&amp; gpio export 27 in</Command>
-      <Message>export pins</Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
