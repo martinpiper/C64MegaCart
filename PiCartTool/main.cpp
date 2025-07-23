@@ -382,7 +382,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
-#if 0
+#if 1
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
 

@@ -76,3 +76,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 			Write program command bytes to $e000-$ffff
 			Write final data to $e000-$ffff range
 			Read back correct final data from $8000-$9fff, retry if needed
+
+
+
+* Edge conector should not have any power plane near the pads.
