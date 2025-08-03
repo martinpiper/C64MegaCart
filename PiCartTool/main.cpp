@@ -382,7 +382,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
-#if 1
+#if 0
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
 
@@ -470,6 +470,7 @@ int main(void)
 	}
 #endif
 
+#if 1
 	printf("Reading...\n");
 	int maxDelayNeeded = 0;
 	fp = fopen("../../../readdata.bin", "wb");
@@ -519,7 +520,7 @@ int main(void)
 	}
 	fclose(fp);
 	printf("maxDelayNeeded = %d\n", maxDelayNeeded);
-
+#endif
 
 	InterfaceControl::SetLED0();
 	InterfaceControl::UpdateLatch();
