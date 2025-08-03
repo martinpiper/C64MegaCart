@@ -41,7 +41,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
-* Level convertors can be replaced with on-board circuitry
+* CartTool V2: Level convertors can be replaced with on-board circuitry
 	Part BSS138
 		https://www.mouser.sg/ProductDetail/SparkFun/BOB-12009?qs=WyAARYrbSnb%252BGYLWggQnjQ%3D%3D
 		https://www.mouser.sg/datasheet/2/813/BSS138-1095242.pdf
@@ -53,6 +53,12 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		https://www.adafruit.com/product/395?srsltid=AfmBOop50Xub3xZMxZeb-DouSMTEdDp58jleg9IizkwYl-zjWiWnu4h0
 		Schematic https://github.com/adafruit/Adafruit-TXB0108-PCB
 		But it does not have strong output for LEDs etc
+
+
+
+
+* CartTool V2: Perhaps have the _IO/_ROM outputs (faked from the C64) default to 1 on powerup?
+
 
 
 
