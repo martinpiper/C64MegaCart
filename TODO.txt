@@ -82,6 +82,9 @@ memory returns to Read mode and Bus Read operations from the address just progra
 			Write program command bytes to $e000-$ffff
 			Write final data to $e000-$ffff range
 			Read back correct final data from $8000-$9fff, retry if needed
+	>> While V1.0 had a separate pad for _RWE to allow fast programming (flash write), the C64 had no access to the signal via the expansion port, V2.0 has programming (flash write) coming from _ROMH directly.
+		This means the C64 can assert _ROMH (via the REQFLASH mechanism which leads to _GAME), or the fast programmer can assert _ROMH directly without needing to set REQFLASH.
+
 
 
 
