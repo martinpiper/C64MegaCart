@@ -87,6 +87,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	> CartTool works
 	> C64 cart bank works, as well as the kill control
 	> C64 flash write also works, under two seconds to write 8KB of erased flash.
+	* Use proper kernal address :)
+
 
 
 
