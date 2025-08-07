@@ -59,19 +59,19 @@ CART_CONTROL_CARTKILL	= $80
 	+WaitForFire_A
 	jsr .eraseTopLine
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
-	+MByteValueToAddress_A $aa , $faaa
-	+MByteValueToAddress_A $55 , $f555
-	+MByteValueToAddress_A $80 , $faaa
-	+MByteValueToAddress_A $aa , $faaa
-	+MByteValueToAddress_A $55 , $f555
-	+MByteValueToAddress_A $10 , $faaa
+	+MByteValueToAddress_A $aa , $eaaa
+	+MByteValueToAddress_A $55 , $e555
+	+MByteValueToAddress_A $80 , $eaaa
+	+MByteValueToAddress_A $aa , $eaaa
+	+MByteValueToAddress_A $55 , $e555
+	+MByteValueToAddress_A $10 , $eaaa
 
 	+MByteValueToAddress_A 0 , CART_CONTROL
 .l2
 	+MACROWaitForTheLastScan_A
-	inc SCREENRAM+VIC2ScreenCharsWidth-1
+	inc SCREENRAM+VIC2ScreenCharsWidth-1	 ; Running indicator
 
-	lda $8000
+	lda C64Cartridge_Lo_8K
 	sta SCREENRAM
 	pha
 	and #$0f
@@ -94,20 +94,85 @@ CART_CONTROL_CARTKILL	= $80
 	jsr .eraseTopLine
 	+DisplayTextAt_AX .eraseComplete , .eraseCompleteEnd , SCREENRAM
 	+WaitForFire_A
+
+
+	; Setup the 8KB write addresses
+	+MByteValueToAddress_A >.flashTestData , .smra1+2
+	+MByteValueToAddress_A $e0 , .smwa1+2	; For ROMH
+
+	; Write 8KB of data to the current bank
+	ldx #0
+.fw1
+	lda #'*'
+	sta SCREENRAM + VIC2ScreenCharsWidth,x
+
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
+	+MByteValueToAddress_A $aa , $eaaa
+	+MByteValueToAddress_A $55 , $e555
+	+MByteValueToAddress_A $a0 , $eaaa
 	
+.smra1	lda .flashTestData,x
+.smwa1	sta $e000,x
+	sta SCREENRAM+2 ; The intended write value to test for
+
+	; Copy the write address to the read result address, with address change for ROML not ROMH
+	lda .smwa1+1
+	sta .smra2+1
+	lda .smwa1+2
+	and #$1f
+	ora #>C64Cartridge_Lo_8K
+	sta .smra2+2
+	
+	; Read result until the byte matches
+	+MByteValueToAddress_A 0 , CART_CONTROL
+.rl2
+;	+MACROWaitForTheLastScan_A
+	inc SCREENRAM+VIC2ScreenCharsWidth-1	 ; Running indicator
+
+.smra2	lda $8000,x
+	sta SCREENRAM
+	cmp SCREENRAM+2
+	bne .rl2
+	
+	lda #$a0
+	sta SCREENRAM + VIC2ScreenCharsWidth,x
+	
+	inx
+	bne .fw1
+
+	; And write the next pages with the test data
+;	inc .smra1+2	; Don't update the reading page, we recycle the data. For real flash writing the read data high address will probably change.
+	inc .smwa1+2
+	bne .fw1
+
+	jsr .displayBank
 
 	jmp .l1
 
-
-.displayBank
-	ldx #0
-.cp1
-	lda C64Cartridge_Lo_8K,x
-	sta SCREENRAM + VIC2ScreenCharsWidth,x
+.eraseTopLine
+	lda #' '
+	ldx #VIC2ScreenCharsWidth-1
+.cl1
+	sta SCREENRAM,x
 	dex
-	bne .cp1
+	bpl .cl1
 	rts
 
+; Displays the first bytes of each page in a cartridge 8K bank on each screen row, at screen row 2
+.displayBank
+	ldx #VIC2ScreenCharsWidth-1
+.cp1
+!for .i , 8 {
+	lda C64Cartridge_Lo_8K + ((.i-1) * $100),x
+	sta SCREENRAM + ((.i + 1) * VIC2ScreenCharsWidth),x
+}
+	dex
+	bpl .cp1
+	rts
+
++MCheckNotInMemoryRange SCREENRAM,$ffff
+
+*=$0700
 .flashTestData
 	!scr "this is some test data..."
 
@@ -138,17 +203,6 @@ CART_CONTROL_CARTKILL	= $80
 .hexNumbers
 	!scr "0123456789abcdef"
 
-.eraseTopLine
-	lda #' '
-	ldx #VIC2ScreenCharsWidth-1
-.cl1
-	sta SCREENRAM,x
-	dex
-	bpl .cl1
-	rts
-
-
-+MCheckNotInMemoryRange SCREENRAM,$ffff
 
 ; Lowercase chars, for any ultimax mode carts
 *=$800
