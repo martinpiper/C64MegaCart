@@ -42,6 +42,7 @@ CART_CONTROL_CARTKILL	= $80
 	+WaitForFire_A
 	jsr .eraseTopLine
 	+DisplayTextAt_AX .isCartBank , .isCartBankEnd , SCREENRAM
+	+MByteValueToAddress_A 0 , CART_SELECT_BANK
 	+MByteValueToAddress_A 0 , CART_CONTROL
 	jsr .displayBank
 	+WaitForFire_A
@@ -59,18 +60,19 @@ CART_CONTROL_CARTKILL	= $80
 	+WaitForFire_A
 	jsr .eraseTopLine
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
-	+MByteValueToAddress_A $aa , $eaaa
-	+MByteValueToAddress_A $55 , $e555
-	+MByteValueToAddress_A $80 , $eaaa
-	+MByteValueToAddress_A $aa , $eaaa
-	+MByteValueToAddress_A $55 , $e555
-	+MByteValueToAddress_A $10 , $eaaa
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $80 , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $10 , C64Cartridge_Hi_8K + $aaa
 
 	+MByteValueToAddress_A 0 , CART_CONTROL
 .l2
-	+MACROWaitForTheLastScan_A
+	+MACROWaitForTheLastScan_A	; There is no real need to wait for the raster, it's just to allow the status byte display to update on the screen.
 	inc SCREENRAM+VIC2ScreenCharsWidth-1	 ; Running indicator
 
+	; Check for $ff to be returned in the status byte, and display the status byte as a hex value
 	lda C64Cartridge_Lo_8K
 	sta SCREENRAM
 	pha
@@ -98,7 +100,7 @@ CART_CONTROL_CARTKILL	= $80
 
 	; Setup the 8KB write addresses
 	+MByteValueToAddress_A >.flashTestData , .smra1+2
-	+MByteValueToAddress_A $e0 , .smwa1+2	; For ROMH
+	+MByteValueToAddress_A >C64Cartridge_Hi_8K , .smwa1+2	; For ROMH
 
 	; Write 8KB of data to the current bank
 	ldx #0
@@ -107,12 +109,12 @@ CART_CONTROL_CARTKILL	= $80
 	sta SCREENRAM + VIC2ScreenCharsWidth,x
 
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
-	+MByteValueToAddress_A $aa , $eaaa
-	+MByteValueToAddress_A $55 , $e555
-	+MByteValueToAddress_A $a0 , $eaaa
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $a0 , C64Cartridge_Hi_8K + $aaa
 	
 .smra1	lda .flashTestData,x
-.smwa1	sta $e000,x
+.smwa1	sta C64Cartridge_Hi_8K,x
 	sta SCREENRAM+2 ; The intended write value to test for
 
 	; Copy the write address to the read result address, with address change for ROML not ROMH
@@ -126,7 +128,7 @@ CART_CONTROL_CARTKILL	= $80
 	; Read result until the byte matches
 	+MByteValueToAddress_A 0 , CART_CONTROL
 .rl2
-;	+MACROWaitForTheLastScan_A
+;	+MACROWaitForTheLastScan_A	; Writing bytes there is really no need to wait for the raster, although you could.
 	inc SCREENRAM+VIC2ScreenCharsWidth-1	 ; Running indicator
 
 .smra2	lda $8000,x
