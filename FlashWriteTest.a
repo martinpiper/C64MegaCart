@@ -1,0 +1,162 @@
+; Assemble the source with: ..\c64\acme.exe -v9 -f cbm -o FlashWriteTest.prg --lib ..\c64\ "FlashWriteTest.a"
+; Compress with: ..\C64\bin\LZMPi.exe -c64mbu FlashWriteTest.prg FlashWriteTest.prg $200
+; Run with: "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x FlashWriteTest.prg
+; C64 build and run: ..\c64\acme.exe -v9 -f cbm -o FlashWriteTest.prg --lib ..\c64\ "FlashWriteTest.a" && ..\C64\bin\LZMPi.exe -c64mbu FlashWriteTest.prg FlashWriteTest.prg $200 && "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x FlashWriteTest.prg
+; Emu build and debug: ..\c64\acme.exe -v9 -f cbm -o FlashWriteTest.prg --lib ..\c64\ "FlashWriteTest.a" && ..\C64\bin\LZMPi.exe -c64mbu FlashWriteTest.prg FlashWriteTest.prg $200 && FlashWriteTest.prg
+
+; MegaCart V2.0 - Flash write test, in ultimax mode. All IRQs/NMIs must be stopped and all code and data in the first 4K (0 - $1000).
+
+; Fire = Advance test state
+
+!initmem $20
+
+!source "stdlib/stdlib.a"
+
+CART_SELECT_BANK		= MemoryMappedIOArea1
+CART_CONTROL			= MemoryMappedIOArea2
+CART_CONTROL_FLASHWRITE	= $40
+CART_CONTROL_CARTKILL	= $80
+
+*=$0200
+	lda #ProcessorPortDefault
+	jsr InitialiseMachine
+
+.l1
+	; Init the cart to power on reset values, incase the reset signal was not passed through when the cart was plugged in and enabled with any switches in a cart expander
+	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+	+MByteValueToAddress_A 0 , CART_CONTROL
+
+	; Setup a visible screen with lower RAM based charset, for ultimax cartridges
+	+MByteValueToAddress_A VIC2ScreenControlVDefault , VIC2ScreenControlV
+	+MVIC2MemorySetup_ScreenChar_A SCREENRAM , Chars
+	sta VIC2MemorySetup
+	+MByteValueToAddress_A CIA2PortASerialBusVICBankDefault , CIA2PortASerialBusVICBank
+	+MByteValueToAddress_A VIC2ScreenControlHDefault , VIC2ScreenControlH
+	
+	+DisplayTextAt_AX .thisIsRAM , .thisIsRAMEnd , C64Cartridge_Lo_8K
+
+	; Check cart kill
+.bt1
+	jsr .eraseTopLine
+	+DisplayTextAt_AX .pressFireForKillTest , .pressFireForKillTestEnd , SCREENRAM
+	+WaitForFire_A
+	jsr .eraseTopLine
+	+DisplayTextAt_AX .isCartBank , .isCartBankEnd , SCREENRAM
+	+MByteValueToAddress_A 0 , CART_CONTROL
+	jsr .displayBank
+	+WaitForFire_A
+	+DisplayTextAt_AX .isRAM , .isRAMEnd , SCREENRAM
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL , CART_CONTROL
+	jsr .displayBank
+;	jmp .bt1
+	+WaitForFire_A
+	+MByteValueToAddress_A 0 , CART_CONTROL
+	jsr .displayBank
+
+	; Erase cart
+	jsr .eraseTopLine
+	+DisplayTextAt_AX .pressFireToStartErase , .pressFireToStartEraseEnd , SCREENRAM
+	+WaitForFire_A
+	jsr .eraseTopLine
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
+	+MByteValueToAddress_A $aa , $faaa
+	+MByteValueToAddress_A $55 , $f555
+	+MByteValueToAddress_A $80 , $faaa
+	+MByteValueToAddress_A $aa , $faaa
+	+MByteValueToAddress_A $55 , $f555
+	+MByteValueToAddress_A $10 , $faaa
+
+	+MByteValueToAddress_A 0 , CART_CONTROL
+.l2
+	+MACROWaitForTheLastScan_A
+	inc SCREENRAM+VIC2ScreenCharsWidth-1
+
+	lda $8000
+	sta SCREENRAM
+	pha
+	and #$0f
+	tax
+	lda .hexNumbers,x
+	sta SCREENRAM + 4
+	pla
+	pha
+	lsr
+	lsr
+	lsr
+	lsr
+	lda .hexNumbers,x
+	sta SCREENRAM + 3
+	pla
+	cmp #$ff
+	bne .l2
+	
+	; Erase done!
+	jsr .eraseTopLine
+	+DisplayTextAt_AX .eraseComplete , .eraseCompleteEnd , SCREENRAM
+	+WaitForFire_A
+	
+
+	jmp .l1
+
+
+.displayBank
+	ldx #0
+.cp1
+	lda C64Cartridge_Lo_8K,x
+	sta SCREENRAM + VIC2ScreenCharsWidth,x
+	dex
+	bne .cp1
+	rts
+
+.flashTestData
+	!scr "this is some test data..."
+
+.pressFireForKillTest
+	!scr "press fire to start kill test"
+.pressFireForKillTestEnd
+
+.pressFireToStartErase
+	!scr "press fire to start erase command"
+.pressFireToStartEraseEnd
+
+.eraseComplete
+	!scr "erase complete, press fire to write"
+.eraseCompleteEnd
+
+.thisIsRAM
+	!scr "this is ram..."
+.thisIsRAMEnd
+
+.isCartBank
+	!scr "cart bank, press fire"
+.isCartBankEnd
+
+.isRAM
+	!scr "should be ram, press fire"
+.isRAMEnd
+
+.hexNumbers
+	!scr "0123456789abcdef"
+
+.eraseTopLine
+	lda #' '
+	ldx #VIC2ScreenCharsWidth-1
+.cl1
+	sta SCREENRAM,x
+	dex
+	bpl .cl1
+	rts
+
+
++MCheckNotInMemoryRange SCREENRAM,$ffff
+
+; Lowercase chars, for any ultimax mode carts
+*=$800
+Chars
+!bin "C:\VICE\C64\chargen",,VIC2MemorySetup_CharsSize
+	
+; There is RAM here after running, but might not be when a cartridge is banked in	
+Initialise_NoPreserveStack = 1
+Initialise_NoMACROWaitForTheLastScan = 1
+Initialise_NoIRQServiceRoutine = 1
+!source "stdlib/Initialise.a"

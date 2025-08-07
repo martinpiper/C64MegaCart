@@ -107,14 +107,6 @@ namespace C64Control
 		sLatchStates[kLatch] &= ~kDataLatchOut;
 	}
 
-	void SetFlashWrite(void)
-	{
-		sLatchStates[kLatch] |= kFlashWriteEnable;
-	}
-	void ClearFlashWrite(void)
-	{
-		sLatchStates[kLatch] &= ~kFlashWriteEnable;
-	}
 	// Note active low logic
 	void SetIO1(void)
 	{
@@ -169,6 +161,17 @@ namespace C64Control
 	{
 		SetOutputByte(sLatchStates[kLatch]);
 		WriteLatch(kLatch);
+	}
+
+	void SetFlashWrite(void)
+	{
+		sLatchStates[kLatch] |= kFlashWriteEnable;	// Compatibility with MegaCart V1.0
+		SetHighROM();	// MegaCart V2.0
+	}
+	void ClearFlashWrite(void)
+	{
+		sLatchStates[kLatch] &= ~kFlashWriteEnable;	// Compatibility with MegaCart V1.0
+		ClearHighROM();	// MegaCart V2.0
 	}
 }
 
@@ -382,7 +385,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
-#if 0
+#if 1
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
 
