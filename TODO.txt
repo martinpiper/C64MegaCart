@@ -88,6 +88,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	> C64 cart bank works, as well as the kill control
 	> C64 flash write also works, under two seconds to write 8KB of erased flash.
 	* Use proper kernal address :)
+	>> Block erase works. The BOM uses a M29F160FT55N3E2, which is (according to page 8 of the datasheet) is a "top boot block" version, which has a8KB block at $1fa000
+		This equates to setting bank $fd before issuign the block erase.
 
 
 

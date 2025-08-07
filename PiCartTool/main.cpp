@@ -385,7 +385,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
-#if 1
+#if 0
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
 
@@ -471,6 +471,64 @@ int main(void)
 		printf("\nBank done\n");
 		bank++;
 	}
+#endif
+
+#if 0
+	printf("Writing one block...\n");
+	// Write some data to the flash, using the erase and program command sequence
+	SetDataIO1(0, 0xfd); // Set bank $fd which equates to the 8KB block at $1fa000
+
+	// Block erase commands
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x80);
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xba, 0x30);
+//	DataLatchOut::SetAddress(0);
+	WaitForStatusRegisterEqual(0xff);
+
+	// Program command
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0xa0);
+
+	// Program command4 (the actual byte)
+	DataLatchOut::SetAddress(0);
+	int theWriteValue = 0x02;
+	DataLatchOut::SetData(theWriteValue);
+	// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
+	C64Control::SetDataLatchOut();
+	C64Control::SetFlashWrite();
+	C64Control::UpdateLatch();
+	delayMicroseconds(1);
+	C64Control::ClearFlashWrite();
+	//			C64Control::UpdateLatch();
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+
+	int statusRegister = 0;
+	int iterations = 0;
+	do
+	{
+		C64Control::SetLowROM();
+		C64Control::UpdateLatch();
+		//				delay(0);	// Certainly more than the 20ns for a bus read
+		if (iterations > 50)
+		{
+			delayMicroseconds(1);
+		}
+		statusRegister = GetInputByte();
+		C64Control::ClearLowROM();
+		C64Control::UpdateLatch();
+		if (iterations++ > 100)
+		{
+			printf("There seems to be a problem verifying the byte at address $%04x\n", 0/*address*/);
+			exit(-1);
+		}
+	} while (statusRegister != theWriteValue);
+
+	printf("\nBlock done\n");
 #endif
 
 #if 1
