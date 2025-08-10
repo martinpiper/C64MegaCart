@@ -282,10 +282,11 @@ void InitDevice(void)
 	{
 		pinMode(i, INPUT);	// D0..7
 	}
-	for (int i = 8; i < 25; i++)
+	for (int i = 8; i < 24; i++)
 	{
 		pinMode(i, OUTPUT);
 	}
+	pinMode(24, INPUT);	// _Button
 	// Allows for these to be read from any plugged in cartridge
 	pinMode(25, INPUT);	// _EXROM
 	pinMode(26, INPUT);	// _GAME

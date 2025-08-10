@@ -96,5 +96,14 @@
 * CartTool V2: Remove power plug
 
 
-
 * CartTool V2: Add stock codes for resistors and LEDs
+
+
+
+* CartTool V2: Push button switch to ground
+	https://www.mouser.sg/ProductDetail/E-Switch/TL59F260Q?qs=QtyuwXswaQiASDh1C66FNg%3D%3D
+	GPIO24 -> PBUTTON
+
+
+
+* CartTool V2: Move the Pi connector to the bottom left, so the USB stacked plugs do not hit the PCB
