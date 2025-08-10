@@ -59,3 +59,35 @@
 
 
 * C64MegaCartV3: Specifically apply net to all edge connectors
+
+
+
+* MegaCart V2.0
+	* Board edge for cart case, maybe a bit wider after the edge connector
+	* Done : Central mounting hole, for cart case
+		References: https://github.com/bwack/C64-cartridge-template-kicad5
+		https://wiki.icomp.de/w/images/d/de/Cart_case_bottom.png
+		https://wiki.icomp.de/wiki/C64_Cartridge_Cases
+	* Done: Chamfer card edge
+	* Done: _EXROM disable logic
+		* Software enable/disable _EXROM write $80 to $dfxx
+			Defaults to $00 (enabling _EXROM = 0)
+	* Done: Flash write logic
+		* Flash write sequence:
+			Run code in RAM at 0-$fff
+			Write 8K bank using $dexx
+			$dfxx = $40 : _EXROM=0 and REQFLASH=1
+			Write erase chip/bank command bytes to $e000-$ffff
+			Read status from $8000-$9fff, until $ff, repeat if needed
+			Write program command bytes to $e000-$ffff
+			Write final data to $e000-$ffff range
+			Read back correct final data from $8000-$9fff, retry if needed
+	>> While V1.0 had a separate pad for _RWE to allow fast programming (flash write), the C64 had no access to the signal via the expansion port, V2.0 has programming (flash write) coming from _ROMH directly.
+		This means the C64 can assert _ROMH (via the REQFLASH mechanism which leads to _GAME), or the fast programmer can assert _ROMH directly without needing to set REQFLASH.
+	> CartTool works
+	> C64 cart bank works, as well as the kill control
+	> C64 flash write also works, under two seconds to write 8KB of erased flash.
+	* Use proper kernal address :)
+	>> Block erase works. The BOM uses a M29F160FT55N3E2, which is (according to page 8 of the datasheet) is a "top boot block" version, which has a 8KB block at $1fa000
+		This equates to setting bank $fd before issuign the block erase.
+
