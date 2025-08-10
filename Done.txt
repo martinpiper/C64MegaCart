@@ -54,3 +54,8 @@
 	Dump _GAME and _EXROM (and banks?) with PHI2 hi (CPU) and lo (VIC)
 	> 23 seconds to read a 2MB cart
 	>> Verified with: diff -q ../../../scrollerbanks.bin ../../../readdata.bin
+
+
+
+
+* C64MegaCartV3: Specifically apply net to all edge connectors
