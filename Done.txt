@@ -95,3 +95,6 @@
 
 * CartTool V2: Remove power plug
 
+
+
+* CartTool V2: Add stock codes for resistors and LEDs
