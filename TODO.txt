@@ -54,7 +54,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		https://www.adafruit.com/product/395?srsltid=AfmBOop50Xub3xZMxZeb-DouSMTEdDp58jleg9IizkwYl-zjWiWnu4h0
 		Schematic https://github.com/adafruit/Adafruit-TXB0108-PCB
 		But it does not have strong output for LEDs etc
-
+	>> Added SUB1-6
 
 
 
