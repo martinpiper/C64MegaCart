@@ -286,7 +286,8 @@ void InitDevice(void)
 	{
 		pinMode(i, OUTPUT);
 	}
-	pinMode(24, INPUT);	// _Button
+	pullUpDnControl(24, PUD_UP);
+	pinMode(24, INPUT);	// PButton
 	// Allows for these to be read from any plugged in cartridge
 	pinMode(25, INPUT);	// _EXROM
 	pinMode(26, INPUT);	// _GAME
