@@ -286,13 +286,16 @@ void InitDevice(void)
 	{
 		pinMode(i, OUTPUT);
 	}
-	pullUpDnControl(24, PUD_UP);
 	pinMode(24, INPUT);	// PButton
+	pullUpDnControl(24, PUD_UP);
 	// Allows for these to be read from any plugged in cartridge
 	pinMode(25, INPUT);	// _EXROM
+	pullUpDnControl(25, PUD_OFF);
 	pinMode(26, INPUT);	// _GAME
+	pullUpDnControl(26, PUD_OFF);
 	// Read the flash status bit, if connected
 	pinMode(27, INPUT);	// RYBY
+	pullUpDnControl(27, PUD_OFF);
 }
 
 void InitCartTool(void)
@@ -344,16 +347,27 @@ int main(void)
 #if 0
 	while (true)
 	{
+		delay(500);
+
+		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
+	}
+#endif
+
+#if 0
+	while (true)
+	{
 		InterfaceControl::ClearLED0();
 		InterfaceControl::ClearLED1();
 		InterfaceControl::ClearLED2();
 		InterfaceControl::ClearLED3();
 		InterfaceControl::UpdateLatch();
+		delay(100);
 		InterfaceControl::SetLED0();
 		InterfaceControl::SetLED1();
 		InterfaceControl::SetLED2();
 		InterfaceControl::SetLED3();
 		InterfaceControl::UpdateLatch();
+		delay(100);
 		C64Control::SetIO1();
 		C64Control::UpdateLatch();
 		C64Control::ClearIO1();
@@ -370,6 +384,8 @@ int main(void)
 		C64Control::UpdateLatch();
 		C64Control::ClearHighROM();
 		C64Control::UpdateLatch();
+
+		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
 	}
 #endif
 
@@ -381,6 +397,17 @@ int main(void)
 	InterfaceControl::UpdateLatch();
 #endif
 
+	printf("Before reset\n");
+	printf("_GAME=%d\n", digitalRead(26));
+	printf("_EXROM=%d\n", digitalRead(25));
+	InterfaceControl::SetReset();
+	InterfaceControl::UpdateLatch();
+	printf("During reset\n");
+	printf("_GAME=%d\n", digitalRead(26));
+	printf("_EXROM=%d\n", digitalRead(25));
+	InterfaceControl::ClearReset();
+	InterfaceControl::UpdateLatch();
+	printf("After reset\n");
 	printf("_GAME=%d\n", digitalRead(26));
 	printf("_EXROM=%d\n", digitalRead(25));
 
@@ -388,9 +415,12 @@ int main(void)
 	FILE* fp;
 
 #if 0
+	InterfaceControl::SetLED0();
+	InterfaceControl::ClearLED1();
+	InterfaceControl::UpdateLatch();
+
 	printf("Writing...\n");
 	// Write some data to the flash, using the erase and program command sequence
-
 	// Erase commands
 	SendChipCommand(0xaaa, 0xaa);
 	SendChipCommand(0x555, 0x55);
@@ -405,8 +435,8 @@ int main(void)
 	int bank = 0;
 	while (!feof(fp))
 	{
-		int numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
-		if (numBytes <= 0)
+		size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+		if (numBytes == 0)
 		{
 			break;
 		}
@@ -473,9 +503,16 @@ int main(void)
 		printf("\nBank done\n");
 		bank++;
 	}
+
+	InterfaceControl::SetLED1();
+	InterfaceControl::UpdateLatch();
 #endif
 
 #if 0
+	InterfaceControl::SetLED0();
+	InterfaceControl::ClearLED1();
+	InterfaceControl::UpdateLatch();
+
 	printf("Writing one block...\n");
 	// Write some data to the flash, using the erase and program command sequence
 	SetDataIO1(0, 0xfd); // Set bank $fd which equates to the 8KB block at $1fa000
@@ -531,9 +568,16 @@ int main(void)
 	} while (statusRegister != theWriteValue);
 
 	printf("\nBlock done\n");
+
+	InterfaceControl::SetLED1();
+	InterfaceControl::UpdateLatch();
 #endif
 
 #if 1
+	InterfaceControl::SetLED0();
+	InterfaceControl::ClearLED1();
+	InterfaceControl::UpdateLatch();
+
 	printf("Reading...\n");
 	int maxDelayNeeded = 0;
 	fp = fopen("../../../readdata.bin", "wb");
@@ -579,13 +623,16 @@ int main(void)
 		}
 
 		fwrite(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
-		printf("\nBank done\n");
+//		printf("\nBank done\n");
 	}
 	fclose(fp);
 	printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+	InterfaceControl::SetLED1();
+	InterfaceControl::UpdateLatch();
 #endif
 
-	InterfaceControl::SetLED0();
+	InterfaceControl::SetLED3();
 	InterfaceControl::UpdateLatch();
 
 	return 0;

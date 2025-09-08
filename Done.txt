@@ -107,3 +107,21 @@
 
 
 * CartTool V2: Move the Pi connector to the bottom left, so the USB stacked plugs do not hit the PCB
+
+
+
+
+* CartTool V2: Level convertors can be replaced with on-board circuitry
+	Part BSS138
+		https://www.mouser.sg/ProductDetail/SparkFun/BOB-12009?qs=WyAARYrbSnb%252BGYLWggQnjQ%3D%3D
+		https://www.mouser.sg/ProductDetail/onsemi-Fairchild/BSS138?qs=HK%252BeIG1iaahCeqBvjB4arg%3D%3D
+		https://www.mouser.sg/datasheet/2/813/BSS138-1095242.pdf
+		https://learn.sparkfun.com/tutorials/bi-directional-logic-level-converter-hookup-guide/all
+		https://www.sparkfun.com/sparkfun-logic-level-converter-bi-directional.html
+		Schematic: https://cdn.sparkfun.com/datasheets/BreakoutBoards/Logic_Level_Bidirectional.pdf
+		Part: CR0805-JW-103ELF :  https://www.mouser.sg/ProductDetail/Bourns/CR0805-JW-103ELF?qs=3T0Ne7aOLxCPz7FUKqmeVw%3D%3D
+	>> Or maybe this IC based 8 channel option: https://www.mouser.sg/ProductDetail/Adafruit/395?qs=GURawfaeGuC1aDMKJdj9pQ%3D%3D
+		https://www.adafruit.com/product/395?srsltid=AfmBOop50Xub3xZMxZeb-DouSMTEdDp58jleg9IizkwYl-zjWiWnu4h0
+		Schematic https://github.com/adafruit/Adafruit-TXB0108-PCB
+		But it does not have strong output for LEDs etc
+	>> Added SUB1-6
