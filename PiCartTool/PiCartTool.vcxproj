@@ -81,6 +81,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Programmer.py" />
     <None Include="scrollerbanks.bin" />
   </ItemGroup>
   <ItemDefinitionGroup />

@@ -53,3 +53,13 @@ memory returns to Read mode and Bus Read operations from the address just progra
 * Maybe a Python flask based website?
 	Which can call the relevant PiCartTool command line options?
 	>> https://flask.palletsprojects.com/en/stable/installation/#python-version
+	>> On Windows:
+		pip install Flask
+	>> On RaspberryPi5:
+		cd ~/projects/PiCartTool
+		python3 -m venv .venv
+		. .venv/bin/activate
+		pip install Flask
+	>> Then: flask --app Programmer run --host=0.0.0.0
+	>> http://127.0.0.1:5000
+	>> http://raspberrypi5:5000/
