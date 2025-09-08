@@ -125,3 +125,6 @@
 		Schematic https://github.com/adafruit/Adafruit-TXB0108-PCB
 		But it does not have strong output for LEDs etc
 	>> Added SUB1-6
+>> Erase/write/read cycle tested working
+>> LEDs work
+>> Button read works
