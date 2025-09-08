@@ -281,6 +281,7 @@ void InitDevice(void)
 	for (int i = 0; i < 8; i++)
 	{
 		pinMode(i, INPUT);	// D0..7
+		pullUpDnControl(i, PUD_OFF);
 	}
 	for (int i = 8; i < 24; i++)
 	{
