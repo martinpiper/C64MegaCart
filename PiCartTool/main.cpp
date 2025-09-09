@@ -340,6 +340,21 @@ void SetDataIO1(int address, int data)
 	C64Control::UpdateLatch();
 }
 
+void AlternateLED2(void)
+{
+	static bool alternate = false;
+	alternate = !alternate;
+	if (alternate)
+	{
+		InterfaceControl::ClearLED2();
+	}
+	else
+	{
+		InterfaceControl::SetLED2();
+	}
+	InterfaceControl::UpdateLatch();
+}
+
 int main(void)
 {
 	InitDevice();
@@ -352,6 +367,22 @@ int main(void)
 
 		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
 	}
+#endif
+
+#if 0
+	printf("Waiting for button...\n");
+	while (digitalRead(24) == HIGH)
+	{
+		delay(100);
+		AlternateLED2();
+	}
+	while (digitalRead(24) == LOW)
+	{
+		delay(100);
+		AlternateLED2();
+	}
+	InterfaceControl::ClearLED2();
+	InterfaceControl::UpdateLatch();
 #endif
 
 #if 0
@@ -415,7 +446,7 @@ int main(void)
 	unsigned char bankData[8192];
 	FILE* fp;
 
-#if 0
+#if 1
 	InterfaceControl::SetLED0();
 	InterfaceControl::ClearLED1();
 	InterfaceControl::UpdateLatch();
@@ -574,7 +605,7 @@ int main(void)
 	InterfaceControl::UpdateLatch();
 #endif
 
-#if 1
+#if 0
 	InterfaceControl::SetLED0();
 	InterfaceControl::ClearLED1();
 	InterfaceControl::UpdateLatch();
