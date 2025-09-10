@@ -16,7 +16,7 @@
 * It multiplexes signals to increase the number of inputs and outputs, allowing the full range of Commodore 64 expansion port signals to be controlled
 * It uses MOSFETs to drive higher currents at higher frequencies
 * Can be ordered direct from PCBWay: https://www.pcbway.com/project/shareproject/C64_Cartridge_programming_tool_V2_4b4c9cff.html
-
+* Raspberry Pi source code for the programmer is here: https://github.com/martinpiper/C64MegaCart/tree/main/PiCartTool
 
 ## About PCB assembly costs
 
