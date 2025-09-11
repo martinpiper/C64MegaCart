@@ -35,7 +35,7 @@ CART_CONTROL_CARTKILL	= $80
 	
 	+DisplayTextAt_AX .thisIsRAM , .thisIsRAMEnd , C64Cartridge_Lo_8K
 
-	; Check cart kill
+	; Check cart kill control functionality
 .bt1
 	jsr .eraseTopLine
 	+DisplayTextAt_AX .pressFireForKillTest , .pressFireForKillTestEnd , SCREENRAM
@@ -43,10 +43,12 @@ CART_CONTROL_CARTKILL	= $80
 	jsr .eraseTopLine
 	+DisplayTextAt_AX .isCartBank , .isCartBankEnd , SCREENRAM
 	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+	; This should display the cartridge bank data
 	+MByteValueToAddress_A 0 , CART_CONTROL
 	jsr .displayBank
 	+WaitForFire_A
 	+DisplayTextAt_AX .isRAM , .isRAMEnd , SCREENRAM
+	; This should disable the cartridge bank and display RAM data
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL , CART_CONTROL
 	jsr .displayBank
 ;	jmp .bt1
@@ -54,11 +56,13 @@ CART_CONTROL_CARTKILL	= $80
 	+MByteValueToAddress_A 0 , CART_CONTROL
 	jsr .displayBank
 
-	; Erase cart
+	; Erase cart functionality
 	jsr .eraseTopLine
 	+DisplayTextAt_AX .pressFireToStartErase , .pressFireToStartEraseEnd , SCREENRAM
 	+WaitForFire_A
 	jsr .eraseTopLine
+	; Send a specific erase command to the Flash in the form of addresses and data
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
 	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
 	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
@@ -108,6 +112,8 @@ CART_CONTROL_CARTKILL	= $80
 	lda #'*'
 	sta SCREENRAM + VIC2ScreenCharsWidth,x
 
+	; Send a specific write command to the Flash in the form of addresses and data
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
 	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
 	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555

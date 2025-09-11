@@ -7,7 +7,7 @@
 * Flash can be erased, either the whole memroy or smaller banks, and written by the C64
 * When ordering 100 units, each unit should cost about USD 10, excluding shipping and import taxes.
 * Can be ordered direct from PCBWay: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_V2_2MB_ae46e34b.html
-
+* Code that demonstrates flash memory erase and write, with cartridge bank kill functionality: https://github.com/martinpiper/C64MegaCart/blob/main/FlashWriteTest.a
 
 ## Cartridge programmer tool
 
