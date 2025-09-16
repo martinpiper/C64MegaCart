@@ -13,10 +13,15 @@ For example, to repeatedly erase and write a file to the cartridge while waiting
 
 	--waitbutton --erase --write scrollerbanks.bin --loop
 
+## Errors
+
+If all four LEDs rapidly flash on and off this means there was an error. Usually this happens during erase or write.
+The tool will wait for a button to be pressed before executing the next command in the command line.
+
 
 ## Setup software using gcc
 
-This uses: https://github.com/WiringPi/WiringPi
+This software uses: https://github.com/WiringPi/WiringPi
 
 sudo apt install git
 git clone https://github.com/WiringPi/WiringPi.git
@@ -42,7 +47,7 @@ Default Raspberry Pi login: user:pi password:raspberry
 
 
 cd ~/projects/PiCartTool/bin/ARM/Release/
-time ./PiCartTool.out
+time ./PiCartTool.out --erase --write ../../../scrollerbanks.bin
 diff -q ../../../scrollerbanks.bin ../../../readdata.bin
 cmp -l ../../../scrollerbanks.bin ../../../readdata.bin | mawk 'function oct2dec(oct,     dec) {for (i = 1; i <= length(oct); i++) {dec *= 8; dec += substr(oct, i, 1)}; return dec} {printf "%08X %02X %02X\n", $1-1, oct2dec($2), oct2dec($3)}'
 

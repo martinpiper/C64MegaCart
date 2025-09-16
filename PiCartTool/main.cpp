@@ -356,6 +356,47 @@ void AlternateLED3(void)
 	InterfaceControl::UpdateLatch();
 }
 
+void AlternateAllLED(void)
+{
+	static bool alternate = false;
+	alternate = !alternate;
+	if (alternate)
+	{
+		InterfaceControl::ClearLED0();
+		InterfaceControl::ClearLED1();
+		InterfaceControl::ClearLED2();
+		InterfaceControl::ClearLED3();
+	}
+	else
+	{
+		InterfaceControl::SetLED0();
+		InterfaceControl::SetLED1();
+		InterfaceControl::SetLED2();
+		InterfaceControl::SetLED3();
+	}
+	InterfaceControl::UpdateLatch();
+}
+
+void ReportCartridgeError(void)
+{
+	printf("Error! Waiting for button...\n");
+	while (digitalRead(24) == HIGH)
+	{
+		delay(100);
+		AlternateAllLED();
+	}
+	while (digitalRead(24) == LOW)
+	{
+		delay(100);
+		AlternateAllLED();
+	}
+	InterfaceControl::ClearLED0();
+	InterfaceControl::ClearLED1();
+	InterfaceControl::ClearLED2();
+	InterfaceControl::ClearLED3();
+	InterfaceControl::UpdateLatch();
+}
+
 int main(int argc, char** argv)
 {
 	unsigned char bankData[8192];
@@ -443,10 +484,15 @@ int main(int argc, char** argv)
 				continue;
 			}
 
+			bool gotError = false;
 			int bank = 0;
 			while (!feof(fp))
 			{
 				size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+				if (gotError)
+				{
+					break;
+				}
 				if (numBytes == 0)
 				{
 					break;
@@ -458,6 +504,11 @@ int main(int argc, char** argv)
 
 				for (int address = 0; address < (int)sizeof(bankData); address++)
 				{
+					if (gotError)
+					{
+						break;
+					}
+
 					if ((address & 0xff) == 0)
 					{
 						printf(".");
@@ -493,6 +544,11 @@ int main(int argc, char** argv)
 					int iterations = 0;
 					do
 					{
+						if (gotError)
+						{
+							break;
+						}
+
 						C64Control::SetLowROM();
 						C64Control::UpdateLatch();
 						//				delay(0);	// Certainly more than the 20ns for a bus read
@@ -506,9 +562,16 @@ int main(int argc, char** argv)
 						if (iterations++ > 100)
 						{
 							printf("There seems to be a problem verifying the byte at address $%04x\n", address);
-							exit(-1);
+							ReportCartridgeError();
+							gotError = true;
+							break;
 						}
 					} while (statusRegister != theWriteValue);
+				}
+
+				if (gotError)
+				{
+					break;
 				}
 
 				printf("\nBank done\n");
