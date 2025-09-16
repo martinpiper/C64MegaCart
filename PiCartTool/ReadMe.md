@@ -9,9 +9,14 @@
 	--read <filename>		-r			Reads the whole cartridge and writes the data to the filename as a binary fil
 	--loop					-l			Loops back to the start of the command line arguments
 
-For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be poressed before each erase/write pass:
+For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be pressed before each erase/write pass:
 
 	--waitbutton --erase --write scrollerbanks.bin --loop
+
+
+Or for example, to read data from a cartridge to a file:
+
+	--read readdata.bin
 
 ## Errors
 
