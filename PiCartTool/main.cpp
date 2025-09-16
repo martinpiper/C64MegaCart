@@ -1,6 +1,7 @@
 // Page numbers reference "For M29F160FT55N3E2 - M29FxxFT_FB-2999423.pdf"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wiringPi.h>
 #include <atomic>
 #include <algorithm>
@@ -340,25 +341,292 @@ void SetDataIO1(int address, int data)
 	C64Control::UpdateLatch();
 }
 
-void AlternateLED2(void)
+void AlternateLED3(void)
 {
 	static bool alternate = false;
 	alternate = !alternate;
 	if (alternate)
 	{
-		InterfaceControl::ClearLED2();
+		InterfaceControl::ClearLED3();
 	}
 	else
 	{
-		InterfaceControl::SetLED2();
+		InterfaceControl::SetLED3();
 	}
 	InterfaceControl::UpdateLatch();
 }
 
-int main(void)
+int main(int argc, char** argv)
 {
-	InitDevice();
-	InitCartTool();
+	unsigned char bankData[8192];
+	FILE* fp;
+
+	int argPos = 1;
+	while (argPos < argc)
+	{
+		InitDevice();
+		InitCartTool();
+
+		if (strcasecmp(argv[argPos], "--waitbutton") == 0 || strcasecmp(argv[argPos], "-b") == 0)
+		{
+			argPos++;
+			printf("Waiting for button...\n");
+			while (digitalRead(24) == HIGH)
+			{
+				delay(100);
+				AlternateLED3();
+			}
+			while (digitalRead(24) == LOW)
+			{
+				delay(100);
+				AlternateLED3();
+			}
+			InterfaceControl::ClearLED3();
+			InterfaceControl::UpdateLatch();
+			continue;
+		}
+
+		// Reset the cartridge before any operations
+		printf("Before reset\n");
+		printf("_GAME=%d\n", digitalRead(26));
+		printf("_EXROM=%d\n", digitalRead(25));
+		InterfaceControl::SetReset();
+		InterfaceControl::UpdateLatch();
+		printf("During reset\n");
+		printf("_GAME=%d\n", digitalRead(26));
+		printf("_EXROM=%d\n", digitalRead(25));
+		InterfaceControl::ClearReset();
+		InterfaceControl::UpdateLatch();
+		printf("After reset\n");
+		printf("_GAME=%d\n", digitalRead(26));
+		printf("_EXROM=%d\n", digitalRead(25));
+
+		if (strcasecmp(argv[argPos], "--erase") == 0 || strcasecmp(argv[argPos], "-e") == 0)
+		{
+			argPos++;
+
+			InterfaceControl::SetLED0();
+			InterfaceControl::UpdateLatch();
+
+			printf("Erasing...\n");
+			// Write some data to the flash, using the erase command sequence
+			// Erase commands
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xaaa, 0x80);
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xaaa, 0x10);
+			WaitForStatusRegisterEqual(0xff);
+
+			InterfaceControl::ClearLED0();
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--write") == 0 || strcasecmp(argv[argPos], "-w") == 0)
+		{
+			argPos++;
+
+			InterfaceControl::SetLED0();
+			InterfaceControl::UpdateLatch();
+
+			printf("Writing...\n");
+			// Write some data to the flash, using the program command sequence
+			fp = fopen(argv[argPos], "rb");
+			argPos++;
+			if (fp == 0)
+			{
+				printf("Error reading input file\n");
+				continue;
+			}
+
+			int bank = 0;
+			while (!feof(fp))
+			{
+				size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+				if (numBytes == 0)
+				{
+					break;
+				}
+				printf("Got bytes %d for bank %d\n", numBytes, bank);
+
+				// Set the bank register
+				SetDataIO1(0, bank);
+
+				for (int address = 0; address < (int)sizeof(bankData); address++)
+				{
+					if ((address & 0xff) == 0)
+					{
+						printf(".");
+						fflush(stdout);
+					}
+
+					// If it's going to be the same as an erased flash byte then skip it :)
+					if (bankData[address] == 0xff)
+					{
+						continue;
+					}
+
+					// Program commands
+					SendChipCommand(0xaaa, 0xaa);
+					SendChipCommand(0x555, 0x55);
+					SendChipCommand(0xaaa, 0xa0);
+
+					// Program command4 (the actual byte)
+					DataLatchOut::SetAddress(address);
+					int theWriteValue = bankData[address];
+					DataLatchOut::SetData(theWriteValue);
+					// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
+					C64Control::SetDataLatchOut();
+					C64Control::SetFlashWrite();
+					C64Control::UpdateLatch();
+					delayMicroseconds(1);
+					C64Control::ClearFlashWrite();
+					//			C64Control::UpdateLatch();
+					C64Control::ClearDataLatchOut();
+					C64Control::UpdateLatch();
+
+					int statusRegister = 0;
+					int iterations = 0;
+					do
+					{
+						C64Control::SetLowROM();
+						C64Control::UpdateLatch();
+						//				delay(0);	// Certainly more than the 20ns for a bus read
+						if (iterations > 50)
+						{
+							delayMicroseconds(1);
+						}
+						statusRegister = GetInputByte();
+						C64Control::ClearLowROM();
+						C64Control::UpdateLatch();
+						if (iterations++ > 100)
+						{
+							printf("There seems to be a problem verifying the byte at address $%04x\n", address);
+							exit(-1);
+						}
+					} while (statusRegister != theWriteValue);
+				}
+
+				printf("\nBank done\n");
+				bank++;
+			}
+
+			InterfaceControl::ClearLED0();
+			InterfaceControl::SetLED1();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--eraseblock") == 0 || strcasecmp(argv[argPos], "-eb") == 0)
+		{
+			argPos++;
+
+			InterfaceControl::SetLED0();
+			InterfaceControl::UpdateLatch();
+
+			int bank = atoi(argv[argPos]);
+			argPos++;
+			printf("Erasing one block at bank %d\n" , bank);
+			// Write some data to the flash, using the erase block command sequence
+			SetDataIO1(0, bank); // Set bank $fd which equates to the 8KB block at $1fa000
+
+			// Block erase commands
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xaaa, 0x80);
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xba, 0x30);
+			//	DataLatchOut::SetAddress(0);
+			WaitForStatusRegisterEqual(0xff);
+
+			InterfaceControl::ClearLED0();
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--read") == 0 || strcasecmp(argv[argPos], "-r") == 0)
+		{
+			argPos++;
+			InterfaceControl::SetLED0();
+			InterfaceControl::UpdateLatch();
+
+			printf("Reading...\n");
+			int maxDelayNeeded = 0;
+			fp = fopen(argv[argPos], "wb");
+			argPos++;
+
+			for (int bank = 0; bank < 256; bank++)
+			{
+				printf("Bank %d\n", bank);
+				SetDataIO1(0, bank);
+				for (int address = 0; address < (int)sizeof(bankData); address++)
+				{
+					/*
+								if ((address & 0x3ff) == 0)
+								{
+									printf(".");
+									fflush(stdout);
+								}
+					*/
+
+					DataLatchOut::SetAddress(address);
+					C64Control::ClearFlashWrite();
+					C64Control::ClearDataLatchOut();
+
+					// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+					int gotPrevious = -1;
+					int gotNow = -2;
+					int progressiveDelay = 0;
+					while (gotPrevious != gotNow)
+					{
+						gotPrevious = gotNow;
+
+						C64Control::SetLowROM();
+						C64Control::UpdateLatch();
+						if (progressiveDelay >= 2)
+						{
+							delayMicroseconds(progressiveDelay / 2);
+							maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+						}
+						gotNow = (unsigned char)GetInputByte();
+						C64Control::ClearLowROM();
+						C64Control::UpdateLatch();
+						progressiveDelay++;
+					}
+					bankData[address] = (unsigned char)gotNow;
+				}
+
+				fwrite(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+				//		printf("\nBank done\n");
+			}
+			fclose(fp);
+			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+			InterfaceControl::ClearLED0();
+			InterfaceControl::SetLED1();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--loop") == 0 || strcasecmp(argv[argPos], "-l") == 0)
+		{
+			argPos = 1;
+			continue;
+		}
+
+		printf("Unknown argument: %s\n", argv[argPos]);
+		argPos++;
+	}
+
 
 #if 0
 	while (true)
@@ -367,22 +635,6 @@ int main(void)
 
 		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
 	}
-#endif
-
-#if 0
-	printf("Waiting for button...\n");
-	while (digitalRead(24) == HIGH)
-	{
-		delay(100);
-		AlternateLED2();
-	}
-	while (digitalRead(24) == LOW)
-	{
-		delay(100);
-		AlternateLED2();
-	}
-	InterfaceControl::ClearLED2();
-	InterfaceControl::UpdateLatch();
 #endif
 
 #if 0
@@ -429,243 +681,17 @@ int main(void)
 	InterfaceControl::UpdateLatch();
 #endif
 
-	printf("Before reset\n");
-	printf("_GAME=%d\n", digitalRead(26));
-	printf("_EXROM=%d\n", digitalRead(25));
-	InterfaceControl::SetReset();
-	InterfaceControl::UpdateLatch();
-	printf("During reset\n");
-	printf("_GAME=%d\n", digitalRead(26));
-	printf("_EXROM=%d\n", digitalRead(25));
-	InterfaceControl::ClearReset();
-	InterfaceControl::UpdateLatch();
-	printf("After reset\n");
-	printf("_GAME=%d\n", digitalRead(26));
-	printf("_EXROM=%d\n", digitalRead(25));
-
-	unsigned char bankData[8192];
-	FILE* fp;
-
 #if 1
-	InterfaceControl::SetLED0();
-	InterfaceControl::ClearLED1();
-	InterfaceControl::UpdateLatch();
 
-	printf("Writing...\n");
-	// Write some data to the flash, using the erase and program command sequence
-	// Erase commands
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x80);
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x10);
-	WaitForStatusRegisterEqual(0xff);
-
-	fp = fopen("../../../scrollerbanks.bin" , "rb");
-
-	int bank = 0;
-	while (!feof(fp))
-	{
-		size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
-		if (numBytes == 0)
-		{
-			break;
-		}
-		printf("Got bytes %d for bank %d\n", numBytes, bank);
-
-		// Set the bank register
-		SetDataIO1(0, bank);
-
-		for (int address = 0; address < (int)sizeof(bankData); address++)
-		{
-			if ((address & 0xff) == 0)
-			{
-				printf(".");
-				fflush(stdout);
-			}
-
-			// If it's going to be the same as an erased flash byte then skip it :)
-			if (bankData[address] == 0xff)
-			{
-				continue;
-			}
-
-			// Program commands
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xaaa, 0xa0);
-
-			// Program command4 (the actual byte)
-			DataLatchOut::SetAddress(address);
-			int theWriteValue = bankData[address];
-			DataLatchOut::SetData(theWriteValue);
-			// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
-			C64Control::SetDataLatchOut();
-			C64Control::SetFlashWrite();
-			C64Control::UpdateLatch();
-			delayMicroseconds(1);
-			C64Control::ClearFlashWrite();
-//			C64Control::UpdateLatch();
-			C64Control::ClearDataLatchOut();
-			C64Control::UpdateLatch();
-
-			int statusRegister = 0;
-			int iterations = 0;
-			do
-			{
-				C64Control::SetLowROM();
-				C64Control::UpdateLatch();
-//				delay(0);	// Certainly more than the 20ns for a bus read
-				if (iterations > 50)
-				{
-					delayMicroseconds(1);
-				}
-				statusRegister = GetInputByte();
-				C64Control::ClearLowROM();
-				C64Control::UpdateLatch();
-				if (iterations++ > 100)
-				{
-					printf("There seems to be a problem verifying the byte at address $%04x\n", address);
-					exit(-1);
-				}
-			} while (statusRegister != theWriteValue);
-		}
-
-		printf("\nBank done\n");
-		bank++;
-	}
-
-	InterfaceControl::SetLED1();
-	InterfaceControl::UpdateLatch();
 #endif
 
 #if 0
-	InterfaceControl::SetLED0();
-	InterfaceControl::ClearLED1();
-	InterfaceControl::UpdateLatch();
 
-	printf("Writing one block...\n");
-	// Write some data to the flash, using the erase and program command sequence
-	SetDataIO1(0, 0xfd); // Set bank $fd which equates to the 8KB block at $1fa000
-
-	// Block erase commands
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x80);
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xba, 0x30);
-//	DataLatchOut::SetAddress(0);
-	WaitForStatusRegisterEqual(0xff);
-
-	// Program command
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0xa0);
-
-	// Program command4 (the actual byte)
-	DataLatchOut::SetAddress(0);
-	int theWriteValue = 0x02;
-	DataLatchOut::SetData(theWriteValue);
-	// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-	delayMicroseconds(1);
-	C64Control::ClearFlashWrite();
-	//			C64Control::UpdateLatch();
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
-
-	int statusRegister = 0;
-	int iterations = 0;
-	do
-	{
-		C64Control::SetLowROM();
-		C64Control::UpdateLatch();
-		//				delay(0);	// Certainly more than the 20ns for a bus read
-		if (iterations > 50)
-		{
-			delayMicroseconds(1);
-		}
-		statusRegister = GetInputByte();
-		C64Control::ClearLowROM();
-		C64Control::UpdateLatch();
-		if (iterations++ > 100)
-		{
-			printf("There seems to be a problem verifying the byte at address $%04x\n", 0/*address*/);
-			exit(-1);
-		}
-	} while (statusRegister != theWriteValue);
-
-	printf("\nBlock done\n");
-
-	InterfaceControl::SetLED1();
-	InterfaceControl::UpdateLatch();
 #endif
 
 #if 0
-	InterfaceControl::SetLED0();
-	InterfaceControl::ClearLED1();
-	InterfaceControl::UpdateLatch();
 
-	printf("Reading...\n");
-	int maxDelayNeeded = 0;
-	fp = fopen("../../../readdata.bin", "wb");
-	for (int bank = 0; bank < 256; bank++)
-	{
-		printf("Bank %d\n", bank);
-		SetDataIO1(0, bank);
-		for (int address = 0; address < (int)sizeof(bankData); address++)
-		{
-/*
-			if ((address & 0x3ff) == 0)
-			{
-				printf(".");
-				fflush(stdout);
-			}
-*/
-
-			DataLatchOut::SetAddress(address);
-			C64Control::ClearFlashWrite();
-			C64Control::ClearDataLatchOut();
-
-			// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
-			int gotPrevious = -1;
-			int gotNow = -2;
-			int progressiveDelay = 0;
-			while (gotPrevious != gotNow)
-			{
-				gotPrevious = gotNow;
-
-				C64Control::SetLowROM();
-				C64Control::UpdateLatch();
-				if (progressiveDelay >= 2)
-				{
-					delayMicroseconds(progressiveDelay/2);
-					maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay/2);
-				}
-				gotNow = (unsigned char)GetInputByte();
-				C64Control::ClearLowROM();
-				C64Control::UpdateLatch();
-				progressiveDelay++;
-			}
-			bankData[address] = (unsigned char)gotNow;
-		}
-
-		fwrite(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
-//		printf("\nBank done\n");
-	}
-	fclose(fp);
-	printf("maxDelayNeeded = %d\n", maxDelayNeeded);
-
-	InterfaceControl::SetLED1();
-	InterfaceControl::UpdateLatch();
 #endif
-
-	InterfaceControl::SetLED3();
-	InterfaceControl::UpdateLatch();
 
 	return 0;
 }
