@@ -28,16 +28,24 @@ The tool will wait for a button to be pressed before executing the next command 
 
 This software uses: https://github.com/WiringPi/WiringPi
 
-sudo apt install git
-git clone https://github.com/WiringPi/WiringPi.git
-Or if that repository disappears: git clone https://github.com/martinpiper/WiringPi.git
-cd WiringPi
-./build
-cd ..
+	sudo apt install git
+	git clone https://github.com/WiringPi/WiringPi.git
 
-git clone https://github.com/martinpiper/C64MegaCart.git
-cd C64MegaCart/PiCartTool
-gcc main.cpp -o PiCartTool -lwiringPi -O3
+Or if that repository disappears:
+
+	git clone https://github.com/martinpiper/WiringPi.git
+
+Then compile with:
+
+	cd WiringPi
+	./build
+	cd ..
+
+To compile the programmer tool:
+
+	git clone https://github.com/martinpiper/C64MegaCart.git
+	cd C64MegaCart/PiCartTool
+	gcc main.cpp -o PiCartTool -lwiringPi -O3
 
 You can then use this command to test erase and write the cartridge: ./PiCartTool --waitbutton --erase --write scrollerbanks.bin --loop
 
