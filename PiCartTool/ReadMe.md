@@ -47,7 +47,9 @@ To compile the programmer tool:
 	cd C64MegaCart/PiCartTool
 	gcc main.cpp -o PiCartTool -lwiringPi -O3
 
-You can then use this command to test erase and write the cartridge: ./PiCartTool --waitbutton --erase --write scrollerbanks.bin --loop
+You can then use this command to test erase and write the cartridge:
+
+	./PiCartTool --waitbutton --erase --write scrollerbanks.bin --loop
 
 
 
