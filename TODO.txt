@@ -67,10 +67,3 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
-* Based on an intended cart case, the PCB needs to be a little narrower, the hole a little larger and moved up away from the edge connector a little.
-	>> 57mm wide
-		Was -29.210mm to 29.210mm
-		Not -28.210mm to 28.210mm = 56.42mm
-	>> 6mm internal peg, moved up 3mm
-	>> And made taller
-	
