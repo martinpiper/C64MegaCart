@@ -72,3 +72,5 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		Was -29.210mm to 29.210mm
 		Not -28.210mm to 28.210mm = 56.42mm
 	>> 6mm internal peg, moved up 3mm
+	>> And made taller
+	
