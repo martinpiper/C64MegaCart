@@ -67,3 +67,11 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
+* The middle hole might need to rest on the 6mm post with enough room to avoid the screw thread and with suitable gap between case top and bottom parts.
+
+
+
+* Maybe a linear read byte mode, normally direct memory to low/high ROM uses the memory address and this should remain. However if reading a specific value in $dexx or $dfxx could return a linearly address byte this would help fast decompression or scrolling or video etc...
+	Perhaps a bank of counters can be set by writing to specific $dexx/$dfxx, then each specific $dexx/dfxx read can advance that counter by one on the negative edge of _READ, giving enough time for a stable value to be read from the memory? Or even incremented on the _READ positive edge, assuming the read value can be held for long enough...
+	It may also be possible to have more than one counter bank set and selected and advanced by a read from different IO space addresses... Giving multiple linear multiplexed reads...
+
