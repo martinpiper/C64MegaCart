@@ -461,7 +461,7 @@ int main(int argc, char** argv)
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED2();
+			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -471,7 +471,7 @@ int main(int argc, char** argv)
 		{
 			argPos++;
 
-			InterfaceControl::SetLED0();
+			InterfaceControl::SetLED1();
 			InterfaceControl::UpdateLatch();
 
 			printf("Writing...\n");
@@ -578,8 +578,8 @@ int main(int argc, char** argv)
 				bank++;
 			}
 
-			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED1();
+			InterfaceControl::ClearLED1();
+			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -609,7 +609,7 @@ int main(int argc, char** argv)
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED2();
+			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -618,7 +618,7 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--read") == 0 || strcasecmp(argv[argPos], "-r") == 0)
 		{
 			argPos++;
-			InterfaceControl::SetLED0();
+			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
 
 			printf("Reading...\n");
@@ -673,8 +673,8 @@ int main(int argc, char** argv)
 			fclose(fp);
 			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
-			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED1();
+			InterfaceControl::ClearLED2();
+			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;

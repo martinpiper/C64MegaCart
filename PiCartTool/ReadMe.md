@@ -1,12 +1,12 @@
 ## Command line arguments
 
 	Long form				Short form	Documentation
-	--waitbutton			-b			Waits for the button on the programmer board to be presse
-	--erase					-e			Erases the whole flash memor
+	--waitbutton			-b			Waits for the button on the programmer board to be pressed
+	--erase					-e			Erases the whole flash memory
 	--eraseblock <number>	-eb			Erases one block of the flash memory using the number value to choose which block.
-										This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at $1fa000.
-	--write <filename>		-w			Writes the file to the flash memor
-	--read <filename>		-r			Reads the whole cartridge and writes the data to the filename as a binary fil
+										This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at $1fa000
+	--write <filename>		-w			Writes the file to the flash memory
+	--read <filename>		-r			Reads the whole cartridge and writes the data to the filename as a binary file
 	--loop					-l			Loops back to the start of the command line arguments
 
 For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be pressed before each erase/write pass:
