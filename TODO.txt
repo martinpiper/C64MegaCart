@@ -86,3 +86,6 @@ memory returns to Read mode and Bus Read operations from the address just progra
 		Done: Move holes to above edge connector
 		Done: Make holes smaller, no pads, just vias: Using: C-30-15
 	Done: Mounting hole center was good from 4.0, but too large. 4.5mm better?
+		Done: Move to mounting hole layer
+		Done: Make unplated
+		
