@@ -78,8 +78,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * C64MegaCart V4.1: 
-	Pin edge connector, too narrow, return to using the V2.0 width.
-	Corner can be a bit longer, but no futher than third of the edge connector.
+	Done: Pin edge connector, too narrow, return to using the V2.0 width.
+	Done: Corner can be a bit longer, but no futher than third of the edge connector.
 	Above the edge connector, make narrower, 4.0 was too narrow.
 	Remove silk screen around DIL holes
 		Move holes to above edge connector
