@@ -139,3 +139,18 @@
 	>> 6mm internal peg, moved up 3mm
 		X=0mm Y=22mm
 	>> And made taller to Y=58.9mm
+
+
+
+* C64MegaCart V4.1: 
+	Done: Pin edge connector, too narrow, return to using the V2.0 width.
+	Done: Corner can be a bit longer, but no futher than third of the edge connector.
+	Done: Top edge max Y = 2.325in Current = 1.5in Right click->on corner green box->Move to
+	Done: Above the edge connector, make narrower, 4.0 was too narrow.
+	Done: Remove silk screen around DIL holes
+		Done: Move holes to above edge connector
+		Done: Make holes smaller, no pads, just vias: Using: C-30-15
+	Done: Mounting hole center was good from 4.0, but too large. 4.5mm better?
+		Done: Move to mounting hole layer
+		Done: Make unplated
+		
