@@ -154,3 +154,11 @@
 		Done: Move to mounting hole layer
 		Done: Make unplated
 		
+		
+		
+		
+* MegaCart V4.2:
+	Bottom board edge connector width move down a little...
+	Hole move down ~1.5mm so that the card edge connector is flush with the bottom of the case
+	Check with model
+	>> Remove copper between edge connector
