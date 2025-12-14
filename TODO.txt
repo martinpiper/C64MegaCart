@@ -80,3 +80,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 * Bottom case pillar would be better with a smaller than PCB ring, then the larger than PCB hole piller
 	And then the pillar from the top meeting the bottom
+
+
+
+* V4.2 move hole up half the pillar edge width...
