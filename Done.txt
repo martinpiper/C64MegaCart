@@ -168,3 +168,7 @@
 
 * FreeCAD normal cartridge case:
 	"C:\Users\marti\Downloads\FreeCAD_1.0.2-conda-Windows-x86_64-py311\bin\freecad.exe" "C:\work\C64MegaCart\C64MegaCartNormalCase.FCStd"
+	Bottom middle post: bottom.Pad002
+		Length of the post->bottom.Pad002.Length
+		Diameter of the outside bottom.Pad002.Sketch005.Constraint3 >> Sketch>Constraints>Constraint3
+		Inside hole-> bottom.Groove001.Sketch027
