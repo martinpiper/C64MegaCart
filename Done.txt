@@ -162,3 +162,9 @@
 	Hole move down ~1.5mm so that the card edge connector is flush with the bottom of the case
 	Check with model
 	>> Remove copper between edge connector
+
+
+
+
+* FreeCAD normal cartridge case:
+	"C:\Users\marti\Downloads\FreeCAD_1.0.2-conda-Windows-x86_64-py311\bin\freecad.exe" "C:\work\C64MegaCart\C64MegaCartNormalCase.FCStd"

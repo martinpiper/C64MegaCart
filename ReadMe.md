@@ -21,3 +21,9 @@
 ## About PCB assembly costs
 
 PCBWay have fixed assembly and fabrication setup fees, so when ordering a small number of units these fees increase per unit cost. The best way to reduce the impact of setup fees is to order more units, in bulk.
+
+
+## Cartridge case for normal sized PCBs
+
+* C64MegaCartNormalCase.FCStd
+* Can be used with: FreeCAD_1.0.2-conda-Windows-x86_64-py311
