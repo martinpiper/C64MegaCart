@@ -75,9 +75,3 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	Perhaps a bank of counters can be set by writing to specific $dexx/$dfxx, then each specific $dexx/dfxx read can advance that counter by one on the negative edge of _READ, giving enough time for a stable value to be read from the memory? Or even incremented on the _READ positive edge, assuming the read value can be held for long enough...
 	It may also be possible to have more than one counter bank set and selected and advanced by a read from different IO space addresses... Giving multiple linear multiplexed reads...
 
-
-
-
-* V4.2 move hole up half the pillar edge width...
-	Measurements: "C:\Users\marti\Pictures\Screenshots\Screenshot 2026-01-18 113344.png"
-	
