@@ -172,3 +172,8 @@
 		Length of the post->bottom.Pad002.Length
 		Diameter of the outside bottom.Pad002.Sketch005.Constraint3 >> Sketch>Constraints>Constraint3
 		Inside hole-> bottom.Groove001.Sketch027
+		End post nubbin... bottom->Cone and Cylinder inside hole
+	* Bottom case pillar would be better with a smaller than PCB ring, then the larger than PCB hole piller
+		And then the pillar from the top meeting the bottom
+		Current outer radius is 3mm on the top and 3.08mm on the bottom
+		Current bottom is 2.62mm away from the top
