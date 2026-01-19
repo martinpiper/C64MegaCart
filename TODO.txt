@@ -95,4 +95,5 @@ memory returns to Read mode and Bus Read operations from the address just progra
 			> D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\config.h.in
 			D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\msvc\ide-config.h
 				/* FIXME: Doesn't work with the rewrite. #define FEATURE_CPUMEMHISTORY 1*/
+		* Note: /* FIXME: some models support non-uniform sector layout */
 	> Build: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/tree/main/vice-3.1/data
