@@ -27,3 +27,8 @@ PCBWay have fixed assembly and fabrication setup fees, so when ordering a small 
 
 * C64MegaCartNormalCase.FCStd
 * Can be used with: FreeCAD_1.0.2-conda-Windows-x86_64-py311
+
+## Vice 3.1 support
+
+* Vice 3.1 Win32 DirectX build with C64MegaCart support: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/tree/main/vice-3.1/data
+* There are many hooks for the cartridge system, the main source is in: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/blob/main/vice-3.1/src/c64/cart/c64megacart.c

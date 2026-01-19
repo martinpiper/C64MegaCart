@@ -79,5 +79,19 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * Vice driver
-	C:\Users\marti\Downloads\vice-3.1.tar\vice-3.1\doc\building\Win32-MSVC-Howto.txt
-	
+	https://master.dl.sourceforge.net/project/vice-emu/releases/vice-3.1.tar.gz?viasf=1
+	D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\doc\building\Win32-MSVC-Howto.txt
+		"D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\generate_msvc14_project.bat"
+		"D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\vs14\vice.sln"
+		x64sc startup project
+			Build: DX Debug - Win32
+			After failures, build again, not rebuild, just build (yes really)
+	-cartc64megacart "C:\work\C64MegaCart\PiCartTool\scrollerbanks.bin"
+	TODO:
+		* D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\c64\c64cart.h #define C64CART_ROM_LIMIT (2048 * 1024)
+			>> Aftually C64MegaCart can be up to 128MB of Flash
+		* Where is this enabled? FEATURE_CPUMEMHISTORY
+			> D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\config.h.in
+			D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\msvc\ide-config.h
+				/* FIXME: Doesn't work with the rewrite. #define FEATURE_CPUMEMHISTORY 1*/
+	> Build: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/tree/main/vice-3.1/data
