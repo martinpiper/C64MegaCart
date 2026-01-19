@@ -87,6 +87,7 @@ memory returns to Read mode and Bus Read operations from the address just progra
 			Build: DX Debug - Win32
 			After failures, build again, not rebuild, just build (yes really)
 	-cartc64megacart "C:\work\C64MegaCart\PiCartTool\scrollerbanks.bin"
+	-autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\FlashWriteTest.prg"
 	TODO:
 		* D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\c64\c64cart.h #define C64CART_ROM_LIMIT (2048 * 1024)
 			>> Aftually C64MegaCart can be up to 128MB of Flash
