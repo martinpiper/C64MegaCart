@@ -1,12 +1,12 @@
 # C64 Open source cartridges and programmers
 
 
-## C64MegaCart V2.0
+## C64MegaCart V4.3
 
 * 2 Megabyte of Flash memory
 * Flash can be erased, either the whole memroy or smaller banks, and written by the C64
 * When ordering 100 units, each unit should cost about USD 10, excluding shipping and import taxes.
-* Can be ordered direct from PCBWay: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_V2_2MB_ae46e34b.html
+* Can be ordered direct from PCBWay: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_V4_3_2MB_eafeb0e4.html
 * Code that demonstrates flash memory erase and write, with cartridge bank kill functionality: https://github.com/martinpiper/C64MegaCart/blob/main/FlashWriteTest.a
 
 ## Cartridge programmer tool
@@ -27,6 +27,8 @@ PCBWay have fixed assembly and fabrication setup fees, so when ordering a small 
 
 * C64MegaCartNormalCase.FCStd
 * Can be used with: FreeCAD_1.0.2-conda-Windows-x86_64-py311
+* Top part: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_case_Top_f965217a.html
+* Bottom part: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_case_Bottom_1492af35.html
 
 ## Vice 3.1 support
 
