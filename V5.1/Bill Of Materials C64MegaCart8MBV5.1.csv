@@ -1,0 +1,6 @@
+﻿Category,Quantity,References,Value,Stock Code,Description,Group Layer,PCB Package,Supplier,Placed
+Capacitors,4,"C1,C2,C3,C4",CL05B104KO5NNNC,https://www.mouser.sg/ProductDetail/Samsung-Electro-Mechanics/CL05B104KO5NNNC?qs=hqM3L16%252BxlfT2SKOuAUq6Q%3D%3D,Samsung Electro-Mechanics CL05B104KO5NNNC 100nF Multilayer Ceramic Capacitor MLCC 16V dc +/-10% Tolerance SMD,,CAPC1005X55N,,Top Copper
+Integrated Circuits,4,"U1,U6,U7,U8",M29F160FT55N3E2,https://www.mouser.sg/ProductDetail/Alliance-Memory/M29F160FT55N3E2?qs=vmHwEFxEFR%252BPKObcaS0Aqw%3D%3D,NOR Flash,,SOP50P2000X120-48N,,Top Copper
+Integrated Circuits,2,"U2,U3",74273,https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS273NSR?qs=SL3LIuy2dWxsq%2FCTeVMKZg%3D%3D,Octal D-Type Positive-Edge-Triggered Flip-Flops With Clear,,SOIC127P780X200-20N-CAP,https://www.mouser.sg/ProductDetail/Mill-Max/110-43-320-41-801000?qs=RC2ne4458IKe5rHuueYA%2FA%3D%3D,Top Copper
+Integrated Circuits,3,"U4,U5,U9",74S139,https://www.mouser.sg/ProductDetail/Texas-Instruments/SN74LS139ADR?qs=SL3LIuy2dWwpYzaAOf%252BnlA%3D%3D,Dual 2-Line to 4-Line Decoders/Demultiplexers,,SOIC127P600X175-16N-CAP,https://www.mouser.sg/ProductDetail/Mill-Max/110-13-316-41-801000?qs=WZeyYeqMOWd122xzWNZKKg%3D%3D,Top Copper
+Miscellaneous,1,J1,CONN-DIL44,,0.1in pitch DIL connector strip,,CONN-DIL44,,Top Copper
