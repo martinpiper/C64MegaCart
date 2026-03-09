@@ -13,6 +13,8 @@
 
 * This is a Raspberry Pi hat
 * Software running on the Raspberry Pi can erase, write, and read the flash memory
+* Setup video: https://www.youtube.com/watch?v=GBg5k46B5Pw
+* Setup instructions: https://github.com/martinpiper/C64MegaCart/blob/main/PiCartTool/ReadMe.md#setup-software-using-gcc
 * It multiplexes signals to increase the number of inputs and outputs, allowing the full range of Commodore 64 expansion port signals to be controlled
 * It uses MOSFETs to drive higher currents at higher frequencies
 * Can be ordered direct from PCBWay: https://www.pcbway.com/project/shareproject/C64_Cartridge_programming_tool_V2_4b4c9cff.html
@@ -25,6 +27,7 @@ PCBWay have fixed assembly and fabrication setup fees, so when ordering a small 
 
 ## Cartridge case for normal sized PCBs
 
+* Case assembly video: https://www.youtube.com/watch?v=x988wTCP7Js
 * C64MegaCartNormalCase.FCStd
 * Can be used with: FreeCAD_1.0.2-conda-Windows-x86_64-py311
 * Top part: https://www.pcbway.com/project/shareproject/Commodore_64_MegaCart_case_Top_f965217a.html
