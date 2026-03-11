@@ -410,3 +410,5 @@ FlashWriteTest.prg
 *.FCBak
 /V4.3/Project Backups
 /V5.1/Project Backups
+WriteCartTest.lbl
+WriteCartTest.map

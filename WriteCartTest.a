@@ -1,0 +1,200 @@
+; This erases the cartridge and writes to the cartridge the example boot code starting at DataForCartridge.
+; This can be modified to write any data to any cartridge bank, for example.
+; Assemble the source with: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a
+; Compress with: ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800
+; Run with Vice emulation: D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
+; Run with EF3: "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x WriteCartTest.prg
+; All in one command line with Vice emulation: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a && ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800 && D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
+
+!to "WriteCartTest.prg", cbm
+!sal
+!sl "WriteCartTest.map"
+!svl "WriteCartTest.lbl"
+!pdb "WriteCartTest.pdb"
+!cpu 6510
+!ct pet
+
+!source "stdlib/stdlib.a"
+!source "stdlib/Comparisons.a"
+
+CART_SELECT_BANK		= MemoryMappedIOArea1
+CART_CONTROL			= MemoryMappedIOArea2
+CART_CONTROL_FLASHWRITE	= $40
+CART_CONTROL_CARTKILL	= $80
+
+* = $800
+	lda #ProcessorPortDefault
+	jsr InitialiseMachine
+
+	+ClearScreenAt_AX SCREENRAM , ' '
+	+SetDefaultScreenLowerCase_A
+	+DisplayColourTextMiddle_AX .message1 , .message1End , SCREENRAM , VIC2Colour_White
+	+DisplayColourTextAt_AX .message1b , .message1bEnd , SCREENRAM + (2 * VIC2ScreenCharsWidth) , VIC2Colour_Grey
+	+WaitForFire_A
+
+	; Reset the cartridge bank to 0, the cartridge does power on reset to 0,0 in CART_SELECT_BANK,CART_CONTROL
+	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+
+	; Send a specific erase command to the Flash in the form of addresses and data
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $80 , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $10 , C64Cartridge_Hi_8K + $aaa
+
+	+MByteValueToAddress_A 0 , CART_CONTROL
+.l2
+;	+MACROWaitForTheLastScan_A	; Waiting for the erase there is really no need to wait for the raster, although you could.
+	inc SCREENRAM	 ; Running indicator
+	lda C64Cartridge_Lo_8K
+	sta SCREENRAM
+	cmp #$ff
+	bne .l2
+
+	+DisplayColourTextMiddle_AX .message2 , .message2End , SCREENRAM , VIC2Colour_LightBlue
+	+WaitForFire_A
+	
+	; Reset the cartridge bank to 0, or choose any specific bank you want to write
+	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+
+	; Write the cartridge bank data
+	ldx #0
+.fw1
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
+	; Send a specific write command to the Flash in the form of addresses and data
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $a0 , C64Cartridge_Hi_8K + $aaa
+
+	; Write the byte into C64Cartridge_Hi_8K address space, with CART_CONTROL_FLASHWRITE this writes the flash memory
+.smra1	lda DataForCartridge,x
+.smwa1	sta C64Cartridge_Hi_8K,x
+	sta SCREENRAM ; The intended write value to test for
+
+	; Copy the write address to the read result address, with address change for ROML not ROMH
+	lda .smwa1+1
+	sta .smra2+1
+	lda .smwa1+2
+	and #$1f
+	ora #>C64Cartridge_Lo_8K
+	sta .smra2+2
+	
+	; Read result until the byte matches
+	+MByteValueToAddress_A 0 , CART_CONTROL
+.rl2
+;	+MACROWaitForTheLastScan_A	; Writing bytes there is really no need to wait for the raster, although you could.
+	inc SCREENRAM+1	 ; Running indicator
+
+.smra2	lda $8000,x
+	sta SCREENRAM+2	; Display what we have currently read
+	cmp SCREENRAM	; Check for intended write value
+	bne .rl2
+	
+	inx
+	bne .fw1
+
+	; And write the next pages with the test data
+	inc .smra1+2
+	inc .smwa1+2	; Detect end of $e000-$ffff address range
+	bne .fw1
+
+	; Back to a normal cartridge
+	+MByteValueToAddress_A 0 , CART_CONTROL
+
+	+DisplayColourTextMiddle_AX .message3 , .message3End , SCREENRAM , VIC2Colour_Green
+	+WaitForFire_A
+
+	jmp KERNALReset
+	
+
+!source "stdlib/Initialise.a"
+
+.message1
+	!scr "Press fire to begin cart erase"
+.message1End
+.message1b
+	!scr "During flash writes ultimax mode is used and can cause corrupted CHARROM to be displayed."
+.message1bEnd
+.message2
+	!scr "Erase complete, press fire to write"
+.message2End
+.message3
+	!scr "Write complete, press fire to reset"
+.message3End
+
+.eraseTopLine
+	lda #' '
+	ldx #VIC2ScreenCharsWidth-1
+.cl1
+	sta SCREENRAM,x
+	dex
+	bpl .cl1
+	rts
+
+; Here is some example code and data that is written to the cartridge
+DataForCartridge
+!pseudopc C64Cartridge_Lo_8K {
+!zn
+!word start
+!word start
++M_CBM80
+
+.c64Reminder
+	!scr "This is the C64MegaCart boot code"
+.c64ReminderEnd
+
+start
+	+MStopInitStack_X
+	jsr DoDataToTop
+	jmp DataToTopStartReal
+
+DataToTopStart
+!pseudopc $c000 {
+DataToTopStartReal
+	lda #ProcessorPortDefault
+	sta ZPProcessorPort
+	lda #ProcessorPortDDRDefault
+	sta ZPProcessorPortDDR
+	lda #0
+	sta MemoryMappedIOArea1
+	sta MemoryMappedIOArea2
+
+	+SetDefaultScreenLowerCase_A
+	+ClearScreenAt_AX SCREENRAM , ' '
+	+DisplayColourTextMiddle_AX .c64Reminder , .c64ReminderEnd , SCREENRAM , VIC2Colour_White
+
+.l1
+	inc VIC2BorderColour
+	jmp .l1
++MCheckNotInIOKernal
+DataToTopEndReal
+}
+
+DataToTopEnd
+DataToTopSize = DataToTopEnd - DataToTopStart
+
+!if DataToTopEndReal >= VIC {
+!error "DataToTopEndReal is over VIC"
+}
+
+!zn
+DoDataToTop
+	ldx #0
+.cl1
+!for .i , (>DataToTopSize)+1 {
+!set .ii = .i - 1
+	lda DataToTopStart + (.ii * $100),x
+	sta DataToTopStartReal + (.ii * $100),x
+}
+	dex
+	bne .cl1
+	rts
+
++MCheckNotInKERNALServiceVectors
+}
+
+DataForCartridgeEnd
