@@ -1,22 +1,23 @@
 ## Command line arguments
 
-	Long form				Short form	Documentation
-	--waitbutton			-b			Waits for the button on the programmer board to be pressed
-	--erase					-e			Erases the whole flash memory
-	--eraseblock <number>	-eb			Erases one block of the flash memory using the number value to choose which block.
-										This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at $1fa000
-	--write <filename>		-w			Writes the file to the flash memory
-	--read <filename>		-r			Reads the whole cartridge and writes the data to the filename as a binary file
-	--loop					-l			Loops back to the start of the command line arguments
+	Long form						Short form	Documentation
+	--waitbutton					-b			Waits for the button on the programmer board to be pressed
+	--erase							-e			Erases the whole flash memory, first chip only
+	--erasechips <num chips>		-ec			Erases the whole flash memory for the number of chips, in parallel
+	--eraseblock <number>			-eb			Erases one block of the flash memory using the number value to choose which block. Each flash chip has 256 blocks (banks)
+												This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block	at $1fa000
+	--write <filename>				-w			Writes the file to the flash memory
+	--read <num banks> <filename>	-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file
+	--loop							-l			Loops back to the start of the command line arguments
 
 For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be pressed before each erase/write pass:
 
 	--waitbutton --erase --write scrollerbanks.bin --loop
 
 
-Or for example, to read data from a cartridge to a file:
+Or for example, to read data from a 256 bank cartridge to a file:
 
-	--read readdata.bin
+	--read 256 readdata.bin
 
 ## Errors
 

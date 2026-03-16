@@ -341,9 +341,8 @@ void SetDataIO1(int address, int data)
 	C64Control::UpdateLatch();
 }
 
-void SetDataIO2(int address, int data)
+void SetDataIO2(int data)
 {
-	DataLatchOut::SetAddress(address);
 	DataLatchOut::SetData(data);
 	C64Control::SetIO2();
 	C64Control::UpdateLatch();
@@ -460,6 +459,44 @@ int main(int argc, char** argv)
 		printf("_GAME=%d\n", digitalRead(26));
 		printf("_EXROM=%d\n", digitalRead(25));
 
+		if (strcasecmp(argv[argPos], "--erasechips") == 0 || strcasecmp(argv[argPos], "-ec") == 0)
+		{
+			argPos++;
+			int numChips = atoi(argv[argPos]);
+			argPos++;
+
+			InterfaceControl::SetLED0();
+			InterfaceControl::UpdateLatch();
+
+			for (int chip = 0; chip < numChips; chip++)
+			{
+				printf("Erasing chip %d\n" , chip);
+				SetDataIO2(chip);
+				// Write some data to the flash, using the erase command sequence
+				// Erase commands
+				SendChipCommand(0xaaa, 0xaa);
+				SendChipCommand(0x555, 0x55);
+				SendChipCommand(0xaaa, 0x80);
+				SendChipCommand(0xaaa, 0xaa);
+				SendChipCommand(0x555, 0x55);
+				SendChipCommand(0xaaa, 0x10);
+			}
+			for (int chip = 0; chip < numChips; chip++)
+			{
+				printf("Waiting for chip %d\n" , chip);
+				SetDataIO2(chip);
+				WaitForStatusRegisterEqual(0xff);
+			}
+
+			SetDataIO2(0);
+
+			InterfaceControl::ClearLED0();
+			InterfaceControl::SetLED3();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
 		if (strcasecmp(argv[argPos], "--erase") == 0 || strcasecmp(argv[argPos], "-e") == 0)
 		{
 			argPos++;
@@ -519,6 +556,7 @@ int main(int argc, char** argv)
 
 				// Set the bank register
 				SetDataIO1(0, bank);
+				SetDataIO2(bank >> 8);
 
 				for (int address = 0; address < (int)sizeof(bankData); address++)
 				{
@@ -615,6 +653,7 @@ int main(int argc, char** argv)
 			printf("Erasing one block at bank %d\n" , bank);
 			// Write some data to the flash, using the erase block command sequence
 			SetDataIO1(0, bank); // Set bank $fd which equates to the 8KB block at $1fa000
+			SetDataIO2(bank >> 8);
 
 			// Block erase commands
 			SendChipCommand(0xaaa, 0xaa);
@@ -636,6 +675,8 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--read") == 0 || strcasecmp(argv[argPos], "-r") == 0)
 		{
 			argPos++;
+			int numBanks = atoi(argv[argPos]);
+			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
 
@@ -644,10 +685,12 @@ int main(int argc, char** argv)
 			fp = fopen(argv[argPos], "wb");
 			argPos++;
 
-			for (int bank = 0; bank < 256; bank++)
+			for (int bank = 0; bank < numBanks; bank++)
 			{
 				printf("Bank %d\n", bank);
 				SetDataIO1(0, bank);
+				SetDataIO2(bank >> 8);
+
 				for (int address = 0; address < (int)sizeof(bankData); address++)
 				{
 					/*

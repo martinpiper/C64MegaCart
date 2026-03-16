@@ -81,6 +81,7 @@
     <Text Include="ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Demo14Cartridge.bin" />
     <None Include="Programmer.py" />
     <None Include="scrollerbanks.bin" />
   </ItemGroup>
