@@ -10,6 +10,7 @@
 * Code that demonstrates erase and write of a cartridge with some example boot code: https://github.com/martinpiper/C64MegaCart/blob/main/WriteCartTest.a
 * Code that demonstrates flash memory erase and write, with cartridge bank kill functionality: https://github.com/martinpiper/C64MegaCart/blob/main/FlashWriteTest.a
 * Assembled prg files for this example code are also in this repository.
+* Source code for the stdlib includes can be found in this repository: https://github.com/martinpiper/C64Public/tree/master/stdlib
 
 ## Cartridge programmer tool
 
