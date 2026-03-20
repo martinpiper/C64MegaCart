@@ -2,9 +2,9 @@
 ; This can be modified to write any data to any cartridge bank, for example.
 ; Assemble the source with: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a
 ; Compress with: ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800
-; Run with Vice emulation: D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
+; Run with Vice emulation: D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -c64megacartflashwrite -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
 ; Run with EF3: "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x WriteCartTest.prg
-; All in one command line with Vice emulation: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a && ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800 && D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
+; All in one command line with Vice emulation: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a && ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800 && D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -c64megacartflashwrite -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
 
 !to "WriteCartTest.prg", cbm
 !sal
@@ -26,11 +26,36 @@ CART_CONTROL_CARTKILL	= $80
 	lda #ProcessorPortDefault
 	jsr InitialiseMachine
 
+.start
 	+ClearScreenAt_AX SCREENRAM , ' '
 	+SetDefaultScreenLowerCase_A
 	+DisplayColourTextMiddle_AX .message1 , .message1End , SCREENRAM , VIC2Colour_White
 	+DisplayColourTextAt_AX .message1b , .message1bEnd , SCREENRAM + (2 * VIC2ScreenCharsWidth) , VIC2Colour_Grey
 	+WaitForFire_A
+	
+	+TestForPortBitsLoop_A CIA1KeyboardColumnJoystickA , JoystickBits_Down , .notDown
+.l1
+	inc VIC2BorderColour
+
+	; Reset the cartridge bank to 0, the cartridge does power on reset to 0,0 in CART_SELECT_BANK,CART_CONTROL
+	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+
+	; Send a specific erase block command to the Flash in the form of addresses and data
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $80 , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
+	+MByteValueToAddress_A $30 , C64Cartridge_Hi_8K + $ba
+
+	jsr WaitForStatusByteFF
+
+	inc VIC2BorderColour
+
+	jmp .start
+.notDown
 
 	; Reset the cartridge bank to 0, the cartridge does power on reset to 0,0 in CART_SELECT_BANK,CART_CONTROL
 	+MByteValueToAddress_A 0 , CART_SELECT_BANK
@@ -45,14 +70,7 @@ CART_CONTROL_CARTKILL	= $80
 	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
 	+MByteValueToAddress_A $10 , C64Cartridge_Hi_8K + $aaa
 
-	+MByteValueToAddress_A 0 , CART_CONTROL
-.l2
-;	+MACROWaitForTheLastScan_A	; Waiting for the erase there is really no need to wait for the raster, although you could.
-	inc SCREENRAM	 ; Running indicator
-	lda C64Cartridge_Lo_8K
-	sta SCREENRAM
-	cmp #$ff
-	bne .l2
+	jsr WaitForStatusByteFF
 
 	+DisplayColourTextMiddle_AX .message2 , .message2End , SCREENRAM , VIC2Colour_LightBlue
 	+WaitForFire_A
@@ -110,6 +128,16 @@ CART_CONTROL_CARTKILL	= $80
 
 	jmp KERNALReset
 	
+WaitForStatusByteFF
+	+MByteValueToAddress_A 0 , CART_CONTROL
+.l2
+;	+MACROWaitForTheLastScan_A	; Waiting for the erase there is really no need to wait for the raster, although you could.
+	inc SCREENRAM	 ; Running indicator
+	lda C64Cartridge_Lo_8K
+	sta SCREENRAM
+	cmp #$ff
+	bne .l2
+	rts
 
 !source "stdlib/Initialise.a"
 
@@ -117,7 +145,7 @@ CART_CONTROL_CARTKILL	= $80
 	!scr "Press fire to begin cart erase"
 .message1End
 .message1b
-	!scr "During flash writes ultimax mode is used and can cause corrupted CHARROM to be displayed."
+	!scr "Press down and fire to erase one bank"
 .message1bEnd
 .message2
 	!scr "Erase complete, press fire to write"
