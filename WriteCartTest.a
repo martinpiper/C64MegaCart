@@ -5,6 +5,7 @@
 ; Run with Vice emulation: D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -c64megacartflashwrite -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
 ; Run with EF3: "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x WriteCartTest.prg
 ; All in one command line with Vice emulation: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a && ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800 && D:\work\Vice-3.1-with-C64MegaCart\vice-3.1\data\x64sc.exe -autostartprgmode 1 -c64megacartflashwrite -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\WriteCartTest.prg"
+; All in one command with EF3: ..\c64\acme.exe -v9 -f cbm --lib ..\c64\ WriteCartTest.a && ..\C64\bin\LZMPi.exe -c64mbu WriteCartTest.prg WriteCartTest.prg $800 && "C:\Users\marti\Desktop\EF3\easytransfer-win32-1.2.0\easytransfer\ef3xfer.exe" -x WriteCartTest.prg
 
 !to "WriteCartTest.prg", cbm
 !sal
@@ -21,6 +22,7 @@ CART_SELECT_BANK		= MemoryMappedIOArea1
 CART_CONTROL			= MemoryMappedIOArea2
 CART_CONTROL_FLASHWRITE	= $40
 CART_CONTROL_CARTKILL	= $80
+CART_COMMAND_ADDRESS	= C64Cartridge_Hi_8K
 
 * = $800
 	lda #ProcessorPortDefault
@@ -39,16 +41,17 @@ CART_CONTROL_CARTKILL	= $80
 
 	; Reset the cartridge bank to 0, the cartridge does power on reset to 0,0 in CART_SELECT_BANK,CART_CONTROL
 	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+	+MAlsoToAddress_A CART_CONTROL
 
 	; Send a specific erase block command to the Flash in the form of addresses and data
-	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to CART_COMMAND_ADDRESS area
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
-	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
-	+MByteValueToAddress_A $80 , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
-	+MByteValueToAddress_A $30 , C64Cartridge_Hi_8K + $ba
+	+MByteValueToAddress_A $aa , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $55 , CART_COMMAND_ADDRESS + $555
+	+MByteValueToAddress_A $80 , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $aa , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $55 , CART_COMMAND_ADDRESS + $555
+	+MByteValueToAddress_A $30 , CART_COMMAND_ADDRESS + $ba	; This can be any address in the bank, but we might as well use this constant specific hex value
 
 	jsr WaitForStatusByteFF
 
@@ -59,16 +62,17 @@ CART_CONTROL_CARTKILL	= $80
 
 	; Reset the cartridge bank to 0, the cartridge does power on reset to 0,0 in CART_SELECT_BANK,CART_CONTROL
 	+MByteValueToAddress_A 0 , CART_SELECT_BANK
+	+MAlsoToAddress_A CART_CONTROL
 
 	; Send a specific erase command to the Flash in the form of addresses and data
-	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to CART_COMMAND_ADDRESS area
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
-	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
-	+MByteValueToAddress_A $80 , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
-	+MByteValueToAddress_A $10 , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $aa , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $55 , CART_COMMAND_ADDRESS + $555
+	+MByteValueToAddress_A $80 , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $aa , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $55 , CART_COMMAND_ADDRESS + $555
+	+MByteValueToAddress_A $10 , CART_COMMAND_ADDRESS + $aaa
 
 	jsr WaitForStatusByteFF
 
@@ -81,16 +85,21 @@ CART_CONTROL_CARTKILL	= $80
 	; Write the cartridge bank data
 	ldx #0
 .fw1
-	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to C64Cartridge_Hi_8K area
+
+	; Avoid floating ultimax memory by reading before the CART_CONTROL update switch
+.smra1	lda DataForCartridge,x
+	pha
+
+	; Note that CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE is used with writes to CART_COMMAND_ADDRESS area
 	+MByteValueToAddress_A CART_CONTROL_CARTKILL | CART_CONTROL_FLASHWRITE , CART_CONTROL
 	; Send a specific write command to the Flash in the form of addresses and data
-	+MByteValueToAddress_A $aa , C64Cartridge_Hi_8K + $aaa
-	+MByteValueToAddress_A $55 , C64Cartridge_Hi_8K + $555
-	+MByteValueToAddress_A $a0 , C64Cartridge_Hi_8K + $aaa
+	+MByteValueToAddress_A $aa , CART_COMMAND_ADDRESS + $aaa
+	+MByteValueToAddress_A $55 , CART_COMMAND_ADDRESS + $555
+	+MByteValueToAddress_A $a0 , CART_COMMAND_ADDRESS + $aaa
 
-	; Write the byte into C64Cartridge_Hi_8K address space, with CART_CONTROL_FLASHWRITE this writes the flash memory
-.smra1	lda DataForCartridge,x
-.smwa1	sta C64Cartridge_Hi_8K,x
+	; Write the byte into CART_COMMAND_ADDRESS address space, with CART_CONTROL_FLASHWRITE this writes the flash memory
+	pla
+.smwa1	sta CART_COMMAND_ADDRESS,x
 	sta SCREENRAM ; The intended write value to test for
 
 	; Copy the write address to the read result address, with address change for ROML not ROMH
@@ -132,7 +141,7 @@ WaitForStatusByteFF
 	+MByteValueToAddress_A 0 , CART_CONTROL
 .l2
 ;	+MACROWaitForTheLastScan_A	; Waiting for the erase there is really no need to wait for the raster, although you could.
-	inc SCREENRAM	 ; Running indicator
+	inc SCREENRAM+1	 ; Running indicator
 	lda C64Cartridge_Lo_8K
 	sta SCREENRAM
 	cmp #$ff
