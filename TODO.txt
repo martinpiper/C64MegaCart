@@ -100,5 +100,5 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
-* Relays: https://www.mouser.sg/c/electromechanical/relays-contactors-solenoids/low-signal-relays-pcb/?q=signal%20relay&coil%20current=10%20mA~~50%20mA&coil%20type=Non-Latching&coil%20voltage=5%20VDC&relay%20contact%20form=1%20Form%20A%20%28SPST-NO%29%7C~1%20Form%20C%20%28SPDT-NO%2C%20NC%29&normallystocked=y&sort=pricing&rp=electromechanical%2Frelays-contactors-solenoids%2Flow-signal-relays-pcb%7C~Coil%20Current%7C~Coil%20Type
+* Relays: https://www.mouser.sg/c/electromechanical/relays-contactors-solenoids/low-signal-relays-pcb/?q=signal%20relay&coil%20current=10%20mA~~50%20mA&coil%20type=Non-Latching&coil%20voltage=5%20VDC&relay%20contact%20form=1%20Form%20A%20%28SPST-NO%29&normallystocked=y&sort=pricing&rp=electromechanical%2Frelays-contactors-solenoids%2Flow-signal-relays-pcb%7C~Coil%20Current%7C~Coil%20Type
 	Can be driven by the MOSFET level shifters
