@@ -105,6 +105,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1F-DC5?qs=VO24nqdQNUCxpZtfAaMOMg%3D%3D
 	Tape: https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1F-TR-DC5?qs=PuRzBkp%252Brz5%2FZcGkdvZTsw%3D%3D
 	Solder pin: https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1P-DC5?qs=sQVrL4YZhsQ8oRG2i%2FXEVA%3D%3D
+	>> CartToolV3.pdsprj including G6L-1P-DC5 https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1P-DC5?qs=sQVrL4YZhsQ8oRG2i%2FXEVA%3D%3D
+		* Need to connect
 
 
 * LEDs WP7113SURDK
