@@ -118,3 +118,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * Resistor sizes
+
+
+
+
+* Check level shifter resistor placement on 5 slot board with respect to the level shifter

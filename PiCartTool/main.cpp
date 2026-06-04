@@ -183,7 +183,7 @@ namespace InterfaceControl
 	const int kLED0				= 0b00010000;
 	const int kLED1				= 0b00100000;
 	const int kLED2				= 0b01000000;
-	const int kLED3				= 0b10000000;
+	const int kRelay1			= 0b10000000;
 
 	// Note active low logic
 	void SetReset(void)
@@ -219,13 +219,13 @@ namespace InterfaceControl
 	{
 		sLatchStates[kLatch] &= ~kLED2;
 	}
-	void SetLED3(void)
+	void SetRelay1(void)
 	{
-		sLatchStates[kLatch] |= kLED3;
+		sLatchStates[kLatch] |= kRelay1;
 	}
-	void ClearLED3(void)
+	void ClearRelay1(void)
 	{
-		sLatchStates[kLatch] &= ~kLED3;
+		sLatchStates[kLatch] &= ~kRelay1;
 	}
 	void UpdateLatch(void)
 	{
@@ -306,7 +306,7 @@ void InitCartTool(void)
 	InterfaceControl::ClearLED0();
 	InterfaceControl::ClearLED1();
 	InterfaceControl::ClearLED2();
-	InterfaceControl::ClearLED3();
+	InterfaceControl::ClearRelay1();
 	InterfaceControl::UpdateLatch();
 
 	C64Control::ClearDataLatchOut();
@@ -358,17 +358,17 @@ void SetDataIO2(int data)
 	C64Control::UpdateLatch();
 }
 
-void AlternateLED3(void)
+void AlternateLED2(void)
 {
 	static bool alternate = false;
 	alternate = !alternate;
 	if (alternate)
 	{
-		InterfaceControl::ClearLED3();
+		InterfaceControl::ClearLED2();
 	}
 	else
 	{
-		InterfaceControl::SetLED3();
+		InterfaceControl::SetLED2();
 	}
 	InterfaceControl::UpdateLatch();
 }
@@ -382,20 +382,21 @@ void AlternateAllLED(void)
 		InterfaceControl::ClearLED0();
 		InterfaceControl::ClearLED1();
 		InterfaceControl::ClearLED2();
-		InterfaceControl::ClearLED3();
 	}
 	else
 	{
 		InterfaceControl::SetLED0();
 		InterfaceControl::SetLED1();
 		InterfaceControl::SetLED2();
-		InterfaceControl::SetLED3();
 	}
 	InterfaceControl::UpdateLatch();
 }
 
 void ReportCartridgeError(void)
 {
+	InterfaceControl::ClearRelay1();
+	InterfaceControl::UpdateLatch();
+
 	printf("Error! Waiting for button...\n");
 	while (digitalRead(24) == HIGH)
 	{
@@ -410,7 +411,6 @@ void ReportCartridgeError(void)
 	InterfaceControl::ClearLED0();
 	InterfaceControl::ClearLED1();
 	InterfaceControl::ClearLED2();
-	InterfaceControl::ClearLED3();
 	InterfaceControl::UpdateLatch();
 }
 
@@ -419,11 +419,17 @@ int main(int argc, char** argv)
 	unsigned char bankData[8192];
 	FILE* fp;
 
+	InitDevice();
+	InitCartTool();
+
 	int argPos = 1;
 	while (argPos < argc)
 	{
 		InitDevice();
 		InitCartTool();
+
+		InterfaceControl::ClearRelay1();
+		InterfaceControl::UpdateLatch();
 
 		if (strcasecmp(argv[argPos], "--waitbutton") == 0 || strcasecmp(argv[argPos], "-b") == 0)
 		{
@@ -432,17 +438,20 @@ int main(int argc, char** argv)
 			while (digitalRead(24) == HIGH)
 			{
 				delay(100);
-				AlternateLED3();
+				AlternateLED2();
 			}
 			while (digitalRead(24) == LOW)
 			{
 				delay(100);
-				AlternateLED3();
+				AlternateLED2();
 			}
-			InterfaceControl::ClearLED3();
+			InterfaceControl::ClearLED2();
 			InterfaceControl::UpdateLatch();
 			continue;
 		}
+
+		InterfaceControl::SetRelay1();
+		InterfaceControl::UpdateLatch();
 
 		// Reset the cartridge before any operations
 		printf("Before reset\n");
@@ -491,7 +500,6 @@ int main(int argc, char** argv)
 			SetDataIO2(0);
 
 			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -516,7 +524,6 @@ int main(int argc, char** argv)
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -635,7 +642,6 @@ int main(int argc, char** argv)
 			}
 
 			InterfaceControl::ClearLED1();
-			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -666,7 +672,6 @@ int main(int argc, char** argv)
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
-			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -735,7 +740,6 @@ int main(int argc, char** argv)
 			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
 			InterfaceControl::ClearLED2();
-			InterfaceControl::SetLED3();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -761,21 +765,21 @@ int main(int argc, char** argv)
 	}
 #endif
 
-#if 0
+#if 1
 	while (true)
 	{
 		InterfaceControl::ClearLED0();
 		InterfaceControl::ClearLED1();
 		InterfaceControl::ClearLED2();
-		InterfaceControl::ClearLED3();
+		InterfaceControl::ClearRelay1();
 		InterfaceControl::UpdateLatch();
-		delay(100);
-		InterfaceControl::SetLED0();
-		InterfaceControl::SetLED1();
+		delay(1000);
+//		InterfaceControl::SetLED0();
+//		InterfaceControl::SetLED1();
 		InterfaceControl::SetLED2();
-		InterfaceControl::SetLED3();
+		InterfaceControl::SetRelay1();
 		InterfaceControl::UpdateLatch();
-		delay(100);
+		delay(1000);
 		C64Control::SetIO1();
 		C64Control::UpdateLatch();
 		C64Control::ClearIO1();
@@ -801,20 +805,8 @@ int main(int argc, char** argv)
 	InterfaceControl::SetLED0();
 	InterfaceControl::SetLED1();
 	InterfaceControl::SetLED2();
-	InterfaceControl::SetLED3();
+	InterfaceControl::SetRelay1();
 	InterfaceControl::UpdateLatch();
-#endif
-
-#if 1
-
-#endif
-
-#if 0
-
-#endif
-
-#if 0
-
 #endif
 
 	return 0;

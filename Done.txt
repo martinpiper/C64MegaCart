@@ -182,3 +182,16 @@
 * V4.2 move hole up half the pillar edge width...
 	Measurements: "C:\Users\marti\Pictures\Screenshots\Screenshot 2026-01-18 113344.png"
 	>> V4.3
+
+
+
+
+
+* Relay driver: https://vsta.org/andy/pickup/Relay%20Switch%20Circuit%20and%20Relay%20Switching%20Circuit.pdf
+	"C:\Users\marti\Downloads\Relay Switch Circuit and Relay Switching Circuit.pdf"
+	With a mosfet
+	Or transistor
+	This >>> Or https://www.mouser.sg/ProductDetail/Texas-Instruments/ULN2803CDWR?qs=vvQtp7zwQdMA2JP56CSJyQ%3D%3D
+		https://microcontrollerslab.com/introduction-uln2803-features/
+	>> V3.2
+	
