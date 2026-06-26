@@ -452,6 +452,7 @@ int main(int argc, char** argv)
 
 		InterfaceControl::SetRelay1();
 		InterfaceControl::UpdateLatch();
+		delay(100); // A small delay to allow the relay to physically switch on the cartridge power
 
 		// Reset the cartridge before any operations
 		printf("Before reset\n");
@@ -765,7 +766,7 @@ int main(int argc, char** argv)
 	}
 #endif
 
-#if 1
+#if 0
 	while (true)
 	{
 		InterfaceControl::ClearLED0();
