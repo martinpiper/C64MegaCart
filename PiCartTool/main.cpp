@@ -6,6 +6,8 @@
 #include <atomic>
 #include <algorithm>
 
+int RegisterDelayMicroSeconds = 1;
+
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
 
 int GetInputByte(void)
@@ -49,6 +51,17 @@ void WriteLatch(int latch)
 }
 
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
+
+void SimulateDotClock(void)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		sLatchStates[2] = sLatchStates[2] ^ 0x80;
+		SetOutputByte(sLatchStates[2]);
+		WriteLatch(2);
+	}
+}
+
 
 namespace DataLatchOut
 {
@@ -174,6 +187,24 @@ namespace C64Control
 		sLatchStates[kLatch] &= ~kFlashWriteEnable;	// Compatibility with MegaCart V1.0
 		ClearHighROM();	// MegaCart V2.0
 	}
+
+	void SetFlashWriteROML(void)
+	{
+		SetLowROM();
+	}
+	void ClearFlashWriteROML(void)
+	{
+		ClearLowROM();
+	}
+
+	void SetFlashWriteROMH(void)
+	{
+		SetHighROM();
+	}
+	void ClearFlashWriteROMH(void)
+	{
+		ClearHighROM();
+	}
 }
 
 namespace InterfaceControl
@@ -234,6 +265,28 @@ namespace InterfaceControl
 	}
 }
 
+void ShowGameExrom()
+{
+	printf("_GAME=%d\n", digitalRead(26));
+	printf("_EXROM=%d\n", digitalRead(25));
+}
+
+void ResetCartridge()
+{
+	// Reset the cartridge before any operations
+	printf("Before reset\n");
+	ShowGameExrom();
+	InterfaceControl::SetReset();
+	InterfaceControl::UpdateLatch();
+	printf("During reset\n");
+	ShowGameExrom();
+	InterfaceControl::ClearReset();
+	InterfaceControl::UpdateLatch();
+	printf("After reset\n");
+	ShowGameExrom();
+}
+
+
 void SendChipCommand(int address, int data)
 {
 	DataLatchOut::SetAddress(address);
@@ -241,11 +294,55 @@ void SendChipCommand(int address, int data)
 	C64Control::SetDataLatchOut();
 	C64Control::SetFlashWrite();
 	C64Control::UpdateLatch();
-//	delayMicroseconds(1);
+//	delayMicroseconds(RegisterDelayMicroSeconds);
 	C64Control::ClearFlashWrite();
 //	C64Control::UpdateLatch();
 	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
 	// TODO: See if both the write and the latch out can be cleared at the same time
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+}
+
+void SendChipCommandROML(int address, int data)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::SetDataLatchOut();
+	C64Control::UpdateLatch();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+	C64Control::SetFlashWriteROML();
+	C64Control::UpdateLatch();
+	SimulateDotClock();
+	delayMicroseconds(RegisterDelayMicroSeconds);
+	C64Control::ClearFlashWriteROML();
+	C64Control::UpdateLatch();
+	C64Control::SetRead();
+	C64Control::UpdateLatch();
+	SimulateDotClock();
+	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+		// TODO: See if both the write and the latch out can be cleared at the same time
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+}
+
+void SendChipCommandROMH(int address, int data)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::SetDataLatchOut();
+	C64Control::UpdateLatch();
+	C64Control::SetFlashWriteROMH();
+	C64Control::UpdateLatch();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+	delayMicroseconds(RegisterDelayMicroSeconds);
+	C64Control::SetRead();
+	C64Control::UpdateLatch();
+	C64Control::ClearFlashWriteROMH();
+	C64Control::UpdateLatch();
+		// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+		// TODO: See if both the write and the latch out can be cleared at the same time
 	C64Control::ClearDataLatchOut();
 	C64Control::UpdateLatch();
 }
@@ -325,24 +422,33 @@ void InitCartTool(void)
 
 void SetDataIO1(int address, int data)
 {
-	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetAddress(address | 0x8000);
 	DataLatchOut::SetData(data);
 	C64Control::SetIO1();
 	C64Control::UpdateLatch();
 
 	C64Control::SetDataLatchOut();
+	C64Control::UpdateLatch();	// Needed?
 	C64Control::SetWrite();
 	C64Control::UpdateLatch();
-	delayMicroseconds(1);
+
+	SimulateDotClock();
+
+	delayMicroseconds(RegisterDelayMicroSeconds);
 	C64Control::SetRead();
+	C64Control::UpdateLatch();	// Data contention?
+
+	SimulateDotClock();
+
 	C64Control::ClearDataLatchOut();
 	C64Control::UpdateLatch();
 	C64Control::ClearIO1();
 	C64Control::UpdateLatch();
 }
 
-void SetDataIO2(int data)
+void SetDataIO2(int address, int data)
 {
+	DataLatchOut::SetAddress(address);
 	DataLatchOut::SetData(data);
 	C64Control::SetIO2();
 	C64Control::UpdateLatch();
@@ -350,10 +456,11 @@ void SetDataIO2(int data)
 	C64Control::SetDataLatchOut();
 	C64Control::SetWrite();
 	C64Control::UpdateLatch();
-	delayMicroseconds(1);
+	delayMicroseconds(RegisterDelayMicroSeconds);
 	C64Control::SetRead();
+//	C64Control::UpdateLatch();	// Data contention?
 	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
+//	C64Control::UpdateLatch();
 	C64Control::ClearIO2();
 	C64Control::UpdateLatch();
 }
@@ -454,20 +561,7 @@ int main(int argc, char** argv)
 		InterfaceControl::UpdateLatch();
 		delay(100); // A small delay to allow the relay to physically switch on the cartridge power
 
-		// Reset the cartridge before any operations
-		printf("Before reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
-		InterfaceControl::SetReset();
-		InterfaceControl::UpdateLatch();
-		printf("During reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
-		InterfaceControl::ClearReset();
-		InterfaceControl::UpdateLatch();
-		printf("After reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
+		ResetCartridge();
 
 		if (strcasecmp(argv[argPos], "--erasechips") == 0 || strcasecmp(argv[argPos], "-ec") == 0)
 		{
@@ -481,7 +575,7 @@ int main(int argc, char** argv)
 			for (int chip = 0; chip < numChips; chip++)
 			{
 				printf("Erasing chip %d\n" , chip);
-				SetDataIO2(chip);
+				SetDataIO2(0, chip);
 				// Write some data to the flash, using the erase command sequence
 				// Erase commands
 				SendChipCommand(0xaaa, 0xaa);
@@ -494,11 +588,11 @@ int main(int argc, char** argv)
 			for (int chip = 0; chip < numChips; chip++)
 			{
 				printf("Waiting for chip %d\n" , chip);
-				SetDataIO2(chip);
+				SetDataIO2(0, chip);
 				WaitForStatusRegisterEqual(0xff);
 			}
 
-			SetDataIO2(0);
+			SetDataIO2(0, 0);
 
 			InterfaceControl::ClearLED0();
 			InterfaceControl::UpdateLatch();
@@ -564,7 +658,7 @@ int main(int argc, char** argv)
 
 				// Set the bank register
 				SetDataIO1(0, bank);
-				SetDataIO2(bank >> 8);
+				SetDataIO2(0, bank >> 8);
 
 				for (int address = 0; address < (int)sizeof(bankData); address++)
 				{
@@ -598,7 +692,7 @@ int main(int argc, char** argv)
 					C64Control::SetDataLatchOut();
 					C64Control::SetFlashWrite();
 					C64Control::UpdateLatch();
-					delayMicroseconds(1);
+					delayMicroseconds(RegisterDelayMicroSeconds);
 					C64Control::ClearFlashWrite();
 					//			C64Control::UpdateLatch();
 					C64Control::ClearDataLatchOut();
@@ -618,7 +712,7 @@ int main(int argc, char** argv)
 						//				delay(0);	// Certainly more than the 20ns for a bus read
 						if (iterations > 50)
 						{
-							delayMicroseconds(1);
+							delayMicroseconds(RegisterDelayMicroSeconds);
 						}
 						statusRegister = GetInputByte();
 						C64Control::ClearLowROM();
@@ -660,7 +754,7 @@ int main(int argc, char** argv)
 			printf("Erasing one block at bank %d\n" , bank);
 			// Write some data to the flash, using the erase block command sequence
 			SetDataIO1(0, bank); // Set bank $fd which equates to the 8KB block at $1fa000
-			SetDataIO2(bank >> 8);
+			SetDataIO2(0, bank >> 8);
 
 			// Block erase commands
 			SendChipCommand(0xaaa, 0xaa);
@@ -673,6 +767,60 @@ int main(int argc, char** argv)
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--dump") == 0 || strcasecmp(argv[argPos], "-d") == 0)
+		{
+			argPos++;
+			int numBytes = atoi(argv[argPos]);
+			argPos++;
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			printf("Dumping...\n");
+			int maxDelayNeeded = 0;
+
+			for (int bytes = 0; bytes < numBytes; bytes++)
+			{
+				int bank = bytes / sizeof(bankData);
+				SetDataIO1(0, bank);
+				SetDataIO2(0, bank >> 8);
+
+				DataLatchOut::SetAddress(bytes);
+				C64Control::ClearFlashWrite();
+				C64Control::ClearDataLatchOut();
+
+				// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+				int gotPrevious = -1;
+				int gotNow = -2;
+				int progressiveDelay = 0;
+				while (gotPrevious != gotNow)
+				{
+					gotPrevious = gotNow;
+
+					C64Control::SetLowROM();
+					C64Control::UpdateLatch();
+					if (progressiveDelay >= 2)
+					{
+						delayMicroseconds(progressiveDelay / 2);
+						maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+					}
+					gotNow = (unsigned char)GetInputByte();
+					C64Control::ClearLowROM();
+					C64Control::UpdateLatch();
+					progressiveDelay++;
+				}
+
+				printf(" %02x " , gotNow);
+				fflush(stdout);
+			}
+			printf("\n");
+			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+			InterfaceControl::ClearLED2();
 			InterfaceControl::UpdateLatch();
 
 			continue;
@@ -695,7 +843,7 @@ int main(int argc, char** argv)
 			{
 				printf("Bank %d\n", bank);
 				SetDataIO1(0, bank);
-				SetDataIO2(bank >> 8);
+				SetDataIO2(0, bank >> 8);
 
 				for (int address = 0; address < (int)sizeof(bankData); address++)
 				{
@@ -766,7 +914,7 @@ int main(int argc, char** argv)
 	}
 #endif
 
-#if 0
+#if 1
 	while (true)
 	{
 		InterfaceControl::ClearLED0();
@@ -781,24 +929,164 @@ int main(int argc, char** argv)
 		InterfaceControl::SetRelay1();
 		InterfaceControl::UpdateLatch();
 		delay(1000);
-		C64Control::SetIO1();
+
+		ResetCartridge();
+
+//		C64Control::SetIO1();
+//		C64Control::UpdateLatch();
+//		C64Control::ClearIO1();
+//		C64Control::UpdateLatch();
+//		C64Control::SetIO2();
+//		C64Control::UpdateLatch();
+//		C64Control::ClearIO2();
+//		C64Control::UpdateLatch();
+//		C64Control::SetLowROM();
+//		C64Control::UpdateLatch();
+//		C64Control::ClearLowROM();
+//		C64Control::UpdateLatch();
+//		C64Control::SetHighROM();
+//		C64Control::UpdateLatch();
+//		C64Control::ClearHighROM();
+//		C64Control::UpdateLatch();
+
+		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
+
+		InitDevice();
+		InitCartTool();
+
+		ShowGameExrom();
+
+		InterfaceControl::SetRelay1();
+		InterfaceControl::UpdateLatch();
+		delay(1000);
+
+		ResetCartridge();
+
+		InterfaceControl::SetLED0();
+		InterfaceControl::UpdateLatch();
+
+		RegisterDelayMicroSeconds = 100;
+
+//		C64Control::ClearPHI2();
+//		C64Control::SetPHI2();
+//		C64Control::ClearIO1();
+//		C64Control::ClearIO2();
+//		C64Control::ClearLowROM();
+//		C64Control::ClearHighROM();
+//		C64Control::UpdateLatch();
+
+#if 0
+		// Checks LED...
+		int i = 0;
+		bool toggle = true;
+		while (true)
+		{
+			DataLatchOut::SetAddress(0x02);
+			if (toggle)
+			{
+				DataLatchOut::SetData(0x80);
+			}
+			else
+			{
+				DataLatchOut::SetData(0x00);
+			}
+			toggle = !toggle;
+			C64Control::SetIO1();
+			C64Control::UpdateLatch();
+			delay(1000);
+			C64Control::SetDataLatchOut();
+			C64Control::UpdateLatch();	// Needed?
+			C64Control::SetWrite();
+			C64Control::UpdateLatch();
+//			delayMicroseconds(RegisterDelayMicroSeconds);
+			delay(1000);
+			C64Control::SetRead();
+			C64Control::UpdateLatch();	// Data contention?
+			C64Control::ClearDataLatchOut();
+			C64Control::UpdateLatch();
+			C64Control::ClearIO1();
+			C64Control::UpdateLatch();
+			delay(1000);
+			printf("fooity %d %d\n", i++ , toggle);
+		}
+#endif
+
+		SetDataIO1(0x00, 0x00);
+		SetDataIO1(0x02, 0x80);
+		delay(1000);
+		SetDataIO1(0x02, 0x00);
+		delay(1000);
+		SetDataIO1(0x02, 0x80);
+		delay(1000);
+		SetDataIO1(0x02, 0x00);
+		delay(1000);
+
+		ShowGameExrom();
+
+		SetDataIO1(0x02, 0x00);
+		ShowGameExrom();
+		SetDataIO1(0x02, 0x01);
+		ShowGameExrom();
+		SetDataIO1(0x02, 0x02);
+		ShowGameExrom();
+		SetDataIO1(0x02, 0x03);
+		ShowGameExrom();
+//		SetDataIO1(0x02, 0x83);
+//		ShowGameExrom();
+
+
+		// Program commands
+		SendChipCommandROML(0xaaa, 0xaa);
+		SendChipCommandROML(0x555, 0x55);
+		SendChipCommandROML(0xaaa, 0xa0);
+
+		// Program command4 (the actual byte)
+		int writeAddress = 0x0000;
+		DataLatchOut::SetAddress(writeAddress);
+		DataLatchOut::SetData(0x13);
+		C64Control::SetDataLatchOut();
 		C64Control::UpdateLatch();
-		C64Control::ClearIO1();
+		C64Control::SetWrite();
 		C64Control::UpdateLatch();
-		C64Control::SetIO2();
+		C64Control::SetFlashWriteROML();
 		C64Control::UpdateLatch();
-		C64Control::ClearIO2();
+		SimulateDotClock();
+		delayMicroseconds(RegisterDelayMicroSeconds);
+		C64Control::ClearFlashWriteROML();
 		C64Control::UpdateLatch();
-		C64Control::SetLowROM();
+		C64Control::SetRead();
 		C64Control::UpdateLatch();
+		SimulateDotClock();
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+
+		delay(1000);
+
+		DataLatchOut::SetAddress(writeAddress);
+		C64Control::SetRead();
+		C64Control::ClearDataLatchOut();
 		C64Control::ClearLowROM();
-		C64Control::UpdateLatch();
-		C64Control::SetHighROM();
-		C64Control::UpdateLatch();
 		C64Control::ClearHighROM();
 		C64Control::UpdateLatch();
 
-		printf("Read %d %d %d %d\n", digitalRead(24), digitalRead(25), digitalRead(26), digitalRead(27));
+		// Read some data
+		for (int i = 0; i < 16; i++)
+		{
+			// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+			C64Control::SetLowROM();
+			C64Control::UpdateLatch();
+			SimulateDotClock();
+			int gotByte = (unsigned char)GetInputByte();
+			printf(" $%02x ", gotByte);
+			C64Control::ClearLowROM();
+			C64Control::UpdateLatch();
+
+			fflush(stdout);
+		}
+		printf("\n");
+
+		delay(1000);
+
 	}
 #endif
 
@@ -810,5 +1098,10 @@ int main(int argc, char** argv)
 	InterfaceControl::UpdateLatch();
 #endif
 
+	// Power off
+	InterfaceControl::ClearRelay1();
+	InterfaceControl::UpdateLatch();
+
 	return 0;
 }
+

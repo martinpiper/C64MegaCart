@@ -75,3 +75,10 @@ RaspberryPi5 erase 2MB + write 2MB + read/verify 2MB cycle = 1m17s
 The PiZero took about 2m for the same erase/write
 The full read/verify on its own takes 17s
 It's probably not needed since the write uses a read to verify the write has completed.
+
+
+
+## If remote debugging with MSVC you see an error about: Microsoft.Bcl.AsyncInterfaces
+
+* This is a bug in MSVC 2022: https://developercommunity.visualstudio.com/t/11122715#T-N11123813
+* Update to MSVC 2026 or rollback MSVC 2022 to previous version (aim for 17.14.35 or earlier).
