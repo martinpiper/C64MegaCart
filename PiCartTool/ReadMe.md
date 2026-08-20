@@ -19,9 +19,15 @@ Or for example, to read data from a 256 bank cartridge to a file:
 
 	--read 256 readdata.bin
 
+## Minimal cartridge boot test
+
+The file CartBoot.bin (assembled from C64MegaCart\CartBoot.a) is a very small minimal cartridge boot which will show a message
+
+	--erase --write CartBoot.bin
+
 ## Errors
 
-If all four LEDs rapidly flash on and off this means there was an error. Usually this happens during erase or write.
+If all LEDs rapidly flash on and off this means there was an error. Usually this happens during erase or write.
 The tool will wait for a button to be pressed before executing the next command in the command line.
 
 

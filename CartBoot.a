@@ -1,0 +1,88 @@
+; Assemble the source with: ..\c64\acme.exe -v9 -f plain -o PiCartTool\CartBoot.bin --lib ..\c64\ "CartBoot.a"
+; This is a minimal cartirdge boot ROM, which will dosplay a message and continuously copy data from the cartridge bank to the screen.
+; This is useful for debugging cartridges and how they behave if power or other signals like IO1/IO2/ROML/ROMH signals are disabled.
+
+;!to "bin/maincart.bin", plain
+!sal
+;!sl "tmp/maincart.map"
+;!svl "tmp/maincart.lbl"
+;!pdb "tmp/maincart.pdb"
+!cpu 6510
+!ct pet
+
+!source "stdlib/stdlib.a"
+!source "stdlib/Comparisons.a"
+
+!zn
+*=C64Cartridge_Lo_8K
+!word start
+!word start
++M_CBM80
+
+.c64Reminder
+	!scr "This cartridge has booted"
+.c64ReminderEnd
+
+start
+	+MStopInitStack_X
+	jsr DoDataToTop
+	jmp DataToTopStartReal
+
+DataToTopStart
+!pseudopc $0800 {
+DataToTopStartReal
+	lda #ProcessorPortDefault
+	jsr InitialiseMachine
+
+	+SetDefaultScreenLowerCase_A
+	+ClearScreenAt_AX SCREENRAM , ' '
+	+ClearScreenAt_AX COLOURRAM , VIC2Colour_Green
+	+DisplayColourTextMiddle_AX .c64Reminder , .c64ReminderEnd , SCREENRAM , VIC2Colour_White
+
+.l1
+	; Keep on copying data from the cartridge bank to the screen
+	lda C64Cartridge_Lo_8K,x
+	sta SCREENRAM + $100,x
+	lda C64Cartridge_Lo_8K + $100,x
+	sta SCREENRAM + $200,x
+	inx
+
+	inc VIC2BorderColour
+	dec VIC2BorderColour
+	jmp .l1
+
+Initialise_NoPreserveStack = 1
+Initialise_NoIRQServiceRoutine = 1
+Initialise_NoMACROWaitForTheLastScan = 1
+!source "stdlib/Initialise.a"
+
++MCheckNotInIOKernal
+DataToTopEndReal
+}
+
+DataToTopEnd
+DataToTopSize = DataToTopEnd - DataToTopStart
+
+!if DataToTopEndReal >= VIC {
+!error "DataToTopEndReal is over VIC"
+}
+
+!zn
+DoDataToTop
+	ldx #0
+.cl1
+!for .i , (>DataToTopSize)+1 {
+!set .ii = .i - 1
+	lda DataToTopStart + (.ii * $100),x
+	sta DataToTopStartReal + (.ii * $100),x
+}
+	dex
+	bne .cl1
+	rts
+
++MCheckNotInBASICUpwards
+
++MCheckNotInKERNALServiceVectors
+
+*=C64Cartridge_Lo_8K + kSize_8K-1
+!by 0

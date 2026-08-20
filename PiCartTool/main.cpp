@@ -9,7 +9,7 @@
 
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
 
-#if 1
+#if 0
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 bool flashWriteCommandIsHiROM = true;
 // Some cartridges rely on seeing dot clock signals to latch other signals
