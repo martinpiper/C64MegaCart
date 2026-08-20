@@ -52,17 +52,6 @@ void WriteLatch(int latch)
 
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
 
-void SimulateDotClock(void)
-{
-	for (int i = 0; i < 4; i++)
-	{
-		sLatchStates[2] = sLatchStates[2] ^ 0x80;
-		SetOutputByte(sLatchStates[2]);
-		WriteLatch(2);
-	}
-}
-
-
 namespace DataLatchOut
 {
 	void SetData(int value)
@@ -262,6 +251,20 @@ namespace InterfaceControl
 	{
 		SetOutputByte(sLatchStates[kLatch]);
 		WriteLatch(kLatch);
+	}
+}
+
+void SimulateDotClock(void)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		//		sLatchStates[2] = sLatchStates[2] ^ 0x80;
+		//		SetOutputByte(sLatchStates[2]);
+		//		WriteLatch(2);
+		sLatchStates[C64Control::kLatch] |= C64Control::kFlashWriteEnable;
+		C64Control::UpdateLatch();
+		sLatchStates[C64Control::kLatch] &= ~C64Control::kFlashWriteEnable;
+		C64Control::UpdateLatch();
 	}
 }
 
@@ -1041,9 +1044,9 @@ int main(int argc, char** argv)
 		SendChipCommandROML(0xaaa, 0xa0);
 
 		// Program command4 (the actual byte)
-		int writeAddress = 0x0000;
+		int writeAddress = 0x0002;
 		DataLatchOut::SetAddress(writeAddress);
-		DataLatchOut::SetData(0x13);
+		DataLatchOut::SetData(0x73);
 		C64Control::SetDataLatchOut();
 		C64Control::UpdateLatch();
 		C64Control::SetWrite();
@@ -1060,7 +1063,7 @@ int main(int argc, char** argv)
 		C64Control::ClearDataLatchOut();
 		C64Control::UpdateLatch();
 
-		delay(1000);
+//		delay(1000);
 
 		DataLatchOut::SetAddress(writeAddress);
 		C64Control::SetRead();
