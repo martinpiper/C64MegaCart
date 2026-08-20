@@ -5,8 +5,39 @@
 #include <wiringPi.h>
 #include <atomic>
 #include <algorithm>
+#include <chrono>
 
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
+
+#if 1
+// Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
+bool flashWriteCommandIsHiROM = true;
+// Some cartridges rely on seeing dot clock signals to latch other signals
+int flashWriteToggleDotClockIterations = 0;
+// Some cartridges need a slightly longer delay for accurate writes
+int RegisterDelayMicroSeconds = 0;
+// Some cartridges need extra clocking of output signals to simulate slightly staggered bus signals from the C64.
+// This is slower but more accurate.
+bool flashWriteCommandExtraClocking = false;
+#else
+// Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
+bool flashWriteCommandIsHiROM = false;
+// Some cartridges rely on seeing dot clock signals to latch other signals
+int flashWriteToggleDotClockIterations = 4;
+// Some cartridges need a slightly longer delay for accurate writes
+int RegisterDelayMicroSeconds = 1;
+// Some cartridges need extra clocking of output signals to simulate slightly staggered bus signals from the C64.
+// This is slower but more accurate.
+bool flashWriteCommandExtraClocking = true;
+#endif
+
+void safeDelayMicroseconds(int delay)
+{
+	if (delay > 0)
+	{
+		delayMicroseconds(delay);
+	}
+}
 
 int GetInputByte(void)
 {
@@ -167,12 +198,43 @@ namespace C64Control
 	void SetFlashWrite(void)
 	{
 		sLatchStates[kLatch] |= kFlashWriteEnable;	// Compatibility with MegaCart V1.0
-		SetHighROM();	// MegaCart V2.0
+		if (flashWriteCommandIsHiROM)
+		{
+			SetHighROM();	// MegaCart V2.0
+		}
+		else
+		{
+			SetLowROM();	// Megabyter
+		}
 	}
 	void ClearFlashWrite(void)
 	{
 		sLatchStates[kLatch] &= ~kFlashWriteEnable;	// Compatibility with MegaCart V1.0
-		ClearHighROM();	// MegaCart V2.0
+		if (flashWriteCommandIsHiROM)
+		{
+			ClearHighROM();	// MegaCart V2.0
+		}
+		else
+		{
+			ClearLowROM();	// Megabyter
+		}
+	}
+
+	void ToggleDotClock(void)
+	{
+		if (flashWriteToggleDotClockIterations <= 0)
+		{
+			return;
+		}
+		int iters = flashWriteToggleDotClockIterations;
+		do
+		{
+			iters--;
+			sLatchStates[kLatch] |= kFlashWriteEnable;
+			UpdateLatch();
+			sLatchStates[kLatch] &= ~kFlashWriteEnable;
+			UpdateLatch();
+		} while (iters > 0);
 	}
 }
 
@@ -238,16 +300,44 @@ void SendChipCommand(int address, int data)
 {
 	DataLatchOut::SetAddress(address);
 	DataLatchOut::SetData(data);
-	C64Control::SetDataLatchOut();
-	C64Control::SetFlashWrite();
-	C64Control::UpdateLatch();
-//	delayMicroseconds(1);
-	C64Control::ClearFlashWrite();
-//	C64Control::UpdateLatch();
-	// Will clear flash write a little before the data output, this might generate a momentary logic contention state
-	// TODO: See if both the write and the latch out can be cleared at the same time
-	C64Control::ClearDataLatchOut();
-	C64Control::UpdateLatch();
+
+	if (flashWriteCommandExtraClocking)
+	{
+		C64Control::SetDataLatchOut();
+		C64Control::UpdateLatch();
+		C64Control::SetWrite();
+		C64Control::UpdateLatch();
+		C64Control::SetFlashWrite();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+		delayMicroseconds(RegisterDelayMicroSeconds);
+		C64Control::ClearFlashWrite();
+		C64Control::UpdateLatch();
+		C64Control::SetRead();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+		// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+			// TODO: See if both the write and the latch out can be cleared at the same time
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+	}
+	else
+	{
+		C64Control::SetDataLatchOut();
+		C64Control::SetFlashWrite();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+		safeDelayMicroseconds(RegisterDelayMicroSeconds);
+		C64Control::ClearFlashWrite();
+		C64Control::ToggleDotClock();
+
+		//	C64Control::UpdateLatch();
+			// Will clear flash write a little before the data output, this might generate a momentary logic contention state
+			// TODO: See if both the write and the latch out can be cleared at the same time
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+	}
 }
 
 void WaitForStatusRegisterEqual(int waitFor)
@@ -333,12 +423,14 @@ void SetDataIO1(int address, int data)
 	C64Control::SetDataLatchOut();
 	C64Control::SetWrite();
 	C64Control::UpdateLatch();
+	C64Control::ToggleDotClock();
 	delayMicroseconds(1);
 	C64Control::SetRead();
 	C64Control::ClearDataLatchOut();
 	C64Control::UpdateLatch();
 	C64Control::ClearIO1();
 	C64Control::UpdateLatch();
+	C64Control::ToggleDotClock();
 }
 
 void SetDataIO2(int data)
@@ -414,10 +506,50 @@ void ReportCartridgeError(void)
 	InterfaceControl::UpdateLatch();
 }
 
+void PerformCartridgeWriteCycle(void)
+{
+	if (flashWriteCommandExtraClocking)
+	{
+		C64Control::SetDataLatchOut();
+		C64Control::UpdateLatch();
+		C64Control::SetWrite();
+		C64Control::UpdateLatch();
+		C64Control::SetFlashWrite();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+		safeDelayMicroseconds(RegisterDelayMicroSeconds);
+		C64Control::ClearFlashWrite();
+		C64Control::UpdateLatch();
+		C64Control::SetRead();
+		C64Control::UpdateLatch();
+		C64Control::ToggleDotClock();
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+
+		C64Control::ClearFlashWrite();
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+	}
+	else
+	{
+		// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
+		C64Control::SetDataLatchOut();
+		C64Control::SetFlashWrite();
+		C64Control::UpdateLatch();
+		delayMicroseconds(1);
+		C64Control::ClearFlashWrite();
+		//			C64Control::UpdateLatch();
+		C64Control::ClearDataLatchOut();
+		C64Control::UpdateLatch();
+	}
+}
+
 int main(int argc, char** argv)
 {
 	unsigned char bankData[8192];
 	FILE* fp;
+
+	auto start = std::chrono::steady_clock::now();
 
 	InitDevice();
 	InitCartTool();
@@ -594,15 +726,8 @@ int main(int argc, char** argv)
 					DataLatchOut::SetAddress(address);
 					int theWriteValue = bankData[address];
 					DataLatchOut::SetData(theWriteValue);
-					// Page 37: During Program operations the Data Polling Bit outputs the complement of the bit being programmed to DQ7.
-					C64Control::SetDataLatchOut();
-					C64Control::SetFlashWrite();
-					C64Control::UpdateLatch();
-					delayMicroseconds(1);
-					C64Control::ClearFlashWrite();
-					//			C64Control::UpdateLatch();
-					C64Control::ClearDataLatchOut();
-					C64Control::UpdateLatch();
+
+					PerformCartridgeWriteCycle();
 
 					int statusRegister = 0;
 					int iterations = 0;
@@ -659,7 +784,7 @@ int main(int argc, char** argv)
 			argPos++;
 			printf("Erasing one block at bank %d\n" , bank);
 			// Write some data to the flash, using the erase block command sequence
-			SetDataIO1(0, bank); // Set bank $fd which equates to the 8KB block at $1fa000
+			SetDataIO1(0, bank);
 			SetDataIO2(bank >> 8);
 
 			// Block erase commands
@@ -752,6 +877,127 @@ int main(int argc, char** argv)
 			continue;
 		}
 
+
+		if (strcasecmp(argv[argPos], "--dump") == 0 || strcasecmp(argv[argPos], "-d") == 0)
+		{
+			argPos++;
+			int numBytes = atoi(argv[argPos]);
+			argPos++;
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			printf("Dumping...\n");
+			int maxDelayNeeded = 0;
+
+			for (int bytes = 0; bytes < numBytes; bytes++)
+			{
+				int bank = bytes / sizeof(bankData);
+				SetDataIO1(0, bank);
+				SetDataIO2(bank >> 8);
+
+				DataLatchOut::SetAddress(bytes);
+				C64Control::ClearFlashWrite();
+				C64Control::ClearDataLatchOut();
+
+				// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+				int gotPrevious = -1;
+				int gotNow = -2;
+				int progressiveDelay = 0;
+				while (gotPrevious != gotNow)
+				{
+					gotPrevious = gotNow;
+
+					C64Control::SetLowROM();
+					C64Control::UpdateLatch();
+					if (progressiveDelay >= 2)
+					{
+						delayMicroseconds(progressiveDelay / 2);
+						maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+					}
+					gotNow = (unsigned char)GetInputByte();
+					C64Control::ClearLowROM();
+					C64Control::UpdateLatch();
+					progressiveDelay++;
+				}
+
+				printf(" %02x ", gotNow);
+				fflush(stdout);
+			}
+			printf("\n");
+			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--writebyte") == 0)
+		{
+			argPos++;
+			int address = atoi(argv[argPos]);
+			argPos++;
+			int byte = atoi(argv[argPos]);
+			argPos++;
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			printf("Writing single byte $%x at $%x...\n" , byte , address);
+			int maxDelayNeeded = 0;
+
+			int bank = address / sizeof(bankData);
+			SetDataIO1(0, bank);
+			SetDataIO2(bank >> 8);
+
+			SendChipCommand(0xaaa, 0xaa);
+			SendChipCommand(0x555, 0x55);
+			SendChipCommand(0xaaa, 0xa0);
+
+			DataLatchOut::SetAddress(address);
+			DataLatchOut::SetData(byte);
+
+			PerformCartridgeWriteCycle();
+
+			C64Control::SetRead();
+			C64Control::ClearLowROM();
+			C64Control::ClearHighROM();
+			C64Control::UpdateLatch();
+
+			// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+			int gotPrevious = -1;
+			int gotNow = -2;
+			int progressiveDelay = 0;
+			while ((gotPrevious != gotNow) && (gotNow != byte))
+			{
+				gotPrevious = gotNow;
+
+				C64Control::SetLowROM();
+				C64Control::UpdateLatch();
+				if (progressiveDelay >= 2)
+				{
+					delayMicroseconds(progressiveDelay / 2);
+					maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+				}
+				if (progressiveDelay > 20)
+				{
+					printf("Error the raad delay is too long, perhaps the flash write is failing...\n");
+					break;
+				}
+				gotNow = (unsigned char)GetInputByte();
+				C64Control::ClearLowROM();
+				C64Control::UpdateLatch();
+				progressiveDelay++;
+			}
+
+			printf("\n");
+			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
 		printf("Unknown argument: %s\n", argv[argPos]);
 		argPos++;
 	}
@@ -810,5 +1056,15 @@ int main(int argc, char** argv)
 	InterfaceControl::UpdateLatch();
 #endif
 
+	// Final power off
+	InterfaceControl::ClearRelay1();
+	InterfaceControl::UpdateLatch();
+
+	auto end = std::chrono::steady_clock::now();
+
+	// Calculate elapsed time as a double in seconds
+	std::chrono::duration<double> elapsed = end - start;
+
+	printf("Elapsed time: %f seconds\n" , elapsed.count());
 	return 0;
 }
