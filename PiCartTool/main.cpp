@@ -9,7 +9,6 @@
 
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
 
-#if 0
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 bool flashWriteCommandIsHiROM = true;
 // Some cartridges rely on seeing dot clock signals to latch other signals
@@ -19,17 +18,6 @@ int RegisterDelayMicroSeconds = 0;
 // Some cartridges need extra clocking of output signals to simulate slightly staggered bus signals from the C64.
 // This is slower but more accurate.
 bool flashWriteCommandExtraClocking = false;
-#else
-// Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
-bool flashWriteCommandIsHiROM = false;
-// Some cartridges rely on seeing dot clock signals to latch other signals
-int flashWriteToggleDotClockIterations = 4;
-// Some cartridges need a slightly longer delay for accurate writes
-int RegisterDelayMicroSeconds = 1;
-// Some cartridges need extra clocking of output signals to simulate slightly staggered bus signals from the C64.
-// This is slower but more accurate.
-bool flashWriteCommandExtraClocking = true;
-#endif
 
 void safeDelayMicroseconds(int delay)
 {
@@ -557,6 +545,46 @@ int main(int argc, char** argv)
 	int argPos = 1;
 	while (argPos < argc)
 	{
+		// Parse cartridge options
+		if (strcasecmp(argv[argPos], "--cfwch") == 0)
+		{
+			argPos++;
+			flashWriteCommandIsHiROM = true;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--cfwcl") == 0)
+		{
+			argPos++;
+			flashWriteCommandIsHiROM = false;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--cfwdci") == 0)
+		{
+			argPos++;
+			flashWriteToggleDotClockIterations = atoi(argv[argPos]);
+			argPos++;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--crdms") == 0)
+		{
+			argPos++;
+			RegisterDelayMicroSeconds = atoi(argv[argPos]);
+			argPos++;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--cfwec") == 0)
+		{
+			argPos++;
+			flashWriteCommandExtraClocking = true;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--cfwnec") == 0)
+		{
+			argPos++;
+			flashWriteCommandExtraClocking = false;
+			continue;
+		}
+
 		InitDevice();
 		InitCartTool();
 

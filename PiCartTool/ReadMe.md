@@ -25,10 +25,34 @@ The file CartBoot.bin (assembled from C64MegaCart\CartBoot.a) is a very small mi
 
 	--erase --write CartBoot.bin
 
+
 ## Errors
 
 If all LEDs rapidly flash on and off this means there was an error. Usually this happens during erase or write.
 The tool will wait for a button to be pressed before executing the next command in the command line.
+
+
+## Cartridge types
+
+Different cartridges have different requirements for how to write the flash.
+C64MegaCart is the default option for this cart tool, however other cartridges can be configured:
+
+	| Type			| Command line options					| Typical time to erase and write	|
+	| ---			| ---									| ---								|
+	| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2 megabytes 60 seconds			|
+	| Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1 megabyte 44 seconds				|
+
+### Advanced configuration options
+
+These options alter the timings and other signals expected by different cartridges types.
+
+	Long form			Documentation
+	--cfwch				HIROM is used to write to the cartridge flash
+	--cfwcl				LOROM is used to write to the cartridge flash
+	--cfwdci <number>	Number of times the dot clock signal is toggled during IO/read/write phases
+	--crdms <number>	Delay in microseconds
+	--cfwec				Use extra clocking for signal generation. This is closer to the standard C64 signal timing, but is slower.
+	--cfwnec			No extra clocking for signal generation. This option if faster but some cartridges are unable tolerate the non-standard timings.
 
 
 ## Setup software using gcc
