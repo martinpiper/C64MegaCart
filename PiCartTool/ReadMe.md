@@ -37,10 +37,10 @@ The tool will wait for a button to be pressed before executing the next command 
 Different cartridges have different requirements for how to write the flash.
 C64MegaCart is the default option for this cart tool, however other cartridges can be configured:
 
-	| Type			| Command line options					| Typical time to erase and write	|
-	| ---			| ---									| ---								|
-	| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2 megabytes 60 seconds			|
-	| Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1 megabyte 44 seconds				|
+| Type			| Command line options					| Typical time to erase and write	|
+| ---			| ---									| ---								|
+| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2 megabytes 60 seconds			|
+| Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1 megabyte 44 seconds				|
 
 ### Advanced configuration options
 
