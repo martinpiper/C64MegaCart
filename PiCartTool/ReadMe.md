@@ -35,7 +35,8 @@ The tool will wait for a button to be pressed before executing the next command 
 ## Cartridge types
 
 Different cartridges have different requirements for how to write the flash.
-C64MegaCart is the default option for this cart tool, however other cartridges can be configured:
+C64MegaCart is the default option for this cart tool, however other cartridges can be configured.
+The advanced configuration command line options must be used before the cartridge is accessed.
 
 | Type			| Command line options					| Typical time to erase and write	|
 | ---			| ---									| ---								|
