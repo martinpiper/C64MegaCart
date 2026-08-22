@@ -130,3 +130,8 @@ memory returns to Read mode and Bus Read operations from the address just progra
 	--slots 5 --dump 0x0 0x20
 	--slots 5 --dump 0x0 0x20 --erase --dump 0x0 0x20
 	--slots 5 --erase  --dump 0x0 0x20 --write scrollerbanks.bin --dump 0x0 0x20
+
+
+
+
+* Need to add dot clock signal to single slot and five slot designs.
