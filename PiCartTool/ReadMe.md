@@ -46,6 +46,7 @@ The advanced configuration command line options must be used before the cartridg
 | ---			| ---									| ---				| ---								|
 | C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2					| 60 seconds						|
 | Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
+| Gmod2			| --cfct 1								| 0.5				| 44 seconds						|
 
 ### Advanced configuration options
 
@@ -58,6 +59,7 @@ These options alter the timings and other signals expected by different cartridg
 	--crdms <number>	Delay in microseconds
 	--cfwec				Use extra clocking for signal generation. This is closer to the standard C64 signal timing, but is slower.
 	--cfwnec			No extra clocking for signal generation. This option if faster but some cartridges are unable tolerate the non-standard timings.
+	--cfct <number>		0 = M29F160, 1 = M29F040
 
 
 ## Setup software using gcc

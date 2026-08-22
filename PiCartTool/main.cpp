@@ -20,6 +20,14 @@ int RegisterDelayMicroSeconds = 0;
 // This is slower but more accurate.
 bool flashWriteCommandExtraClocking = false;
 
+enum FlashChipType
+{
+	M29F160 = 0,	// Also M29F200, M29F400, M29F800
+	M29F040
+};
+
+FlashChipType flashChipType = M29F160;
+
 void safeDelayMicroseconds(int delay)
 {
 	if (delay > 0)
@@ -338,31 +346,63 @@ void SendChipCommand(int address, int data)
 void SendChipCommandErase(void)
 {
 	// Write some data to the flash, using the erase command sequence
-	// Erase commands
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x80);
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x10);
+	switch (flashChipType)
+	{
+	case M29F160:
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xaaa, 0x80);
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xaaa, 0x10);
+		break;
+
+	case M29F040:
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0x555, 0x80);
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0x555, 0x10);
+		break;
+	}
 }
 
 void SendChipCommandBlockErase(void)
 {
 	// Block erase commands
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0x80);
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xba, 0x30);
+	switch (flashChipType)
+	{
+	case M29F160:
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xaaa, 0x80);
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xba, 0x30);
+		break;
+	case M29F040:
+		printf("Block erase not implemented for this flash chip type\n");
+		exit(-1);
+		break;
+	}
 }
 
 void SendChipCommandProgram(void)
 {
-	SendChipCommand(0xaaa, 0xaa);
-	SendChipCommand(0x555, 0x55);
-	SendChipCommand(0xaaa, 0xa0);
+	switch (flashChipType)
+	{
+	case M29F160:
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xaaa, 0xa0);
+		break;
+	case M29F040:
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0x555, 0xa0);
+		break;
+	}
 }
 
 void WaitForStatusRegisterEqual(int waitFor)
@@ -619,6 +659,13 @@ int main(int argc, char** argv)
 		{
 			argPos++;
 			flashWriteCommandExtraClocking = false;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--cfct") == 0)
+		{
+			argPos++;
+			flashChipType = (FlashChipType) std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
 			continue;
 		}
 
