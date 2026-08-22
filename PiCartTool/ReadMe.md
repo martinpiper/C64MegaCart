@@ -38,10 +38,10 @@ Different cartridges have different requirements for how to write the flash.
 C64MegaCart is the default option for this cart tool, so these advanced options are not required, however other cartridges can be configured.
 The advanced configuration command line options must be used before the cartridge is accessed.
 
-| Type			| Command line options					| Typical time to erase and write	|
-| ---			| ---									| ---								|
-| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2 megabytes 60 seconds			|
-| Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1 megabyte 44 seconds				|
+| Type			| Command line options					| Size (megabytes)	| Typical time to erase and write	|
+| ---			| ---									| ---				| ---								|
+| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2					| 60 seconds						|
+| Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
 
 ### Advanced configuration options
 

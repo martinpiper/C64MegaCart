@@ -6,6 +6,7 @@
 #include <atomic>
 #include <algorithm>
 #include <chrono>
+#include <string>
 
 // projects/PiCartTool/bin/ARM/Release/PiCartTool.out
 
@@ -561,14 +562,14 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--cfwdci") == 0)
 		{
 			argPos++;
-			flashWriteToggleDotClockIterations = atoi(argv[argPos]);
+			flashWriteToggleDotClockIterations = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			continue;
 		}
 		if (strcasecmp(argv[argPos], "--crdms") == 0)
 		{
 			argPos++;
-			RegisterDelayMicroSeconds = atoi(argv[argPos]);
+			RegisterDelayMicroSeconds = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			continue;
 		}
@@ -632,7 +633,7 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--erasechips") == 0 || strcasecmp(argv[argPos], "-ec") == 0)
 		{
 			argPos++;
-			int numChips = atoi(argv[argPos]);
+			int numChips = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 
 			InterfaceControl::SetLED0();
@@ -808,7 +809,7 @@ int main(int argc, char** argv)
 			InterfaceControl::SetLED0();
 			InterfaceControl::UpdateLatch();
 
-			int bank = atoi(argv[argPos]);
+			int bank = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			printf("Erasing one block at bank %d\n" , bank);
 			// Write some data to the flash, using the erase block command sequence
@@ -834,7 +835,7 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--read") == 0 || strcasecmp(argv[argPos], "-r") == 0)
 		{
 			argPos++;
-			int numBanks = atoi(argv[argPos]);
+			int numBanks = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
@@ -909,7 +910,9 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--dump") == 0 || strcasecmp(argv[argPos], "-d") == 0)
 		{
 			argPos++;
-			int numBytes = atoi(argv[argPos]);
+			int address = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+			int numBytes = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
@@ -923,7 +926,7 @@ int main(int argc, char** argv)
 				SetDataIO1(0, bank);
 				SetDataIO2(bank >> 8);
 
-				DataLatchOut::SetAddress(bytes);
+				DataLatchOut::SetAddress(address + bytes);
 				C64Control::ClearFlashWrite();
 				C64Control::ClearDataLatchOut();
 
@@ -963,9 +966,9 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--writebyte") == 0)
 		{
 			argPos++;
-			int address = atoi(argv[argPos]);
+			int address = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
-			int byte = atoi(argv[argPos]);
+			int byte = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
