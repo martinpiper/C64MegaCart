@@ -706,6 +706,9 @@ int main(int argc, char** argv)
 			continue;
 		}
 
+		// Default to the first slot...
+		InterfaceControl::SetActiveSlot(0);
+		// Enable power
 		InterfaceControl::SetRelay1();
 		InterfaceControl::UpdateLatch();
 		delay(100); // A small delay to allow the relay to physically switch on the cartridge power
@@ -761,7 +764,13 @@ int main(int argc, char** argv)
 
 			printf("Erasing...\n");
 			SendChipCommandErase();
-			WaitForStatusRegisterEqual(0xff);
+
+			for (int slot = 0; slot < activeSlots; slot++)
+			{
+				InterfaceControl::SetActiveSlot(slot);
+				InterfaceControl::UpdateLatch();
+				WaitForStatusRegisterEqual(0xff);
+			}
 
 			InterfaceControl::ClearLED0();
 			InterfaceControl::UpdateLatch();
