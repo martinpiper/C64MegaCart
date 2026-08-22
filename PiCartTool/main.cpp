@@ -285,6 +285,11 @@ namespace InterfaceControl
 	}
 }
 
+void ShowCartridgeState()
+{
+	printf("_GAME=%d _EXROM=%d\n", digitalRead(26), digitalRead(25));
+}
+
 void SendChipCommand(int address, int data)
 {
 	DataLatchOut::SetAddress(address);
@@ -327,6 +332,37 @@ void SendChipCommand(int address, int data)
 		C64Control::UpdateLatch();
 		C64Control::ToggleDotClock();
 	}
+}
+
+
+void SendChipCommandErase(void)
+{
+	// Write some data to the flash, using the erase command sequence
+	// Erase commands
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x80);
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x10);
+}
+
+void SendChipCommandBlockErase(void)
+{
+	// Block erase commands
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0x80);
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xba, 0x30);
+}
+
+void SendChipCommandProgram(void)
+{
+	SendChipCommand(0xaaa, 0xaa);
+	SendChipCommand(0x555, 0x55);
+	SendChipCommand(0xaaa, 0xa0);
 }
 
 void WaitForStatusRegisterEqual(int waitFor)
@@ -617,18 +653,15 @@ int main(int argc, char** argv)
 
 		// Reset the cartridge before any operations
 		printf("Before reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
+		ShowCartridgeState();
 		InterfaceControl::SetReset();
 		InterfaceControl::UpdateLatch();
 		printf("During reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
+		ShowCartridgeState();
 		InterfaceControl::ClearReset();
 		InterfaceControl::UpdateLatch();
 		printf("After reset\n");
-		printf("_GAME=%d\n", digitalRead(26));
-		printf("_EXROM=%d\n", digitalRead(25));
+		ShowCartridgeState();
 
 		if (strcasecmp(argv[argPos], "--erasechips") == 0 || strcasecmp(argv[argPos], "-ec") == 0)
 		{
@@ -643,14 +676,7 @@ int main(int argc, char** argv)
 			{
 				printf("Erasing chip %d\n" , chip);
 				SetDataIO2(chip);
-				// Write some data to the flash, using the erase command sequence
-				// Erase commands
-				SendChipCommand(0xaaa, 0xaa);
-				SendChipCommand(0x555, 0x55);
-				SendChipCommand(0xaaa, 0x80);
-				SendChipCommand(0xaaa, 0xaa);
-				SendChipCommand(0x555, 0x55);
-				SendChipCommand(0xaaa, 0x10);
+				SendChipCommandErase();
 			}
 			for (int chip = 0; chip < numChips; chip++)
 			{
@@ -675,14 +701,7 @@ int main(int argc, char** argv)
 			InterfaceControl::UpdateLatch();
 
 			printf("Erasing...\n");
-			// Write some data to the flash, using the erase command sequence
-			// Erase commands
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xaaa, 0x80);
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xaaa, 0x10);
+			SendChipCommandErase();
 			WaitForStatusRegisterEqual(0xff);
 
 			InterfaceControl::ClearLED0();
@@ -747,9 +766,7 @@ int main(int argc, char** argv)
 					}
 
 					// Program commands
-					SendChipCommand(0xaaa, 0xaa);
-					SendChipCommand(0x555, 0x55);
-					SendChipCommand(0xaaa, 0xa0);
+					SendChipCommandProgram();
 
 					// Program command4 (the actual byte)
 					DataLatchOut::SetAddress(address);
@@ -816,13 +833,7 @@ int main(int argc, char** argv)
 			SetDataIO1(0, bank);
 			SetDataIO2(bank >> 8);
 
-			// Block erase commands
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xaaa, 0x80);
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xba, 0x30);
+			SendChipCommandBlockErase();
 			//	DataLatchOut::SetAddress(0);
 			WaitForStatusRegisterEqual(0xff);
 
@@ -922,7 +933,7 @@ int main(int argc, char** argv)
 
 			for (int bytes = 0; bytes < numBytes; bytes++)
 			{
-				int bank = bytes / sizeof(bankData);
+				int bank = (address + bytes) / sizeof(bankData);
 				SetDataIO1(0, bank);
 				SetDataIO2(bank >> 8);
 
@@ -980,9 +991,7 @@ int main(int argc, char** argv)
 			SetDataIO1(0, bank);
 			SetDataIO2(bank >> 8);
 
-			SendChipCommand(0xaaa, 0xaa);
-			SendChipCommand(0x555, 0x55);
-			SendChipCommand(0xaaa, 0xa0);
+			SendChipCommandProgram();
 
 			DataLatchOut::SetAddress(address);
 			DataLatchOut::SetData(byte);

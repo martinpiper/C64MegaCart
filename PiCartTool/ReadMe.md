@@ -5,7 +5,7 @@
 	--erase							-e			Erases the whole flash memory, first chip only
 	--erasechips <num chips>		-ec			Erases the whole flash memory for the number of chips, in parallel
 	--eraseblock <number>			-eb			Erases one block of the flash memory using the number value to choose which block. Each flash chip has 256 blocks (banks)
-												This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block	at $1fa000
+												This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at 0x1fa000
 	--write <filename>				-w			Writes the file to the flash memory
 	--read <num banks> <filename>	-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file
 	--loop							-l			Loops back to the start of the command line arguments
@@ -18,6 +18,10 @@ For example, to repeatedly erase and write a file to the cartridge while waiting
 Or for example, to read data from a 256 bank cartridge to a file:
 
 	--read 256 readdata.bin
+
+Or to dump 15 bytes from 0x1fa000, erase the whole block, dump the same bytes to show they are erased, then write a single byte to 0x1fa007, and then dump the bytes to show the single updated byte:
+
+	--dump 0x1fa000 0xf --eraseblock 253 --dump 0x1fa000 0xf  --writebyte 0x1fa007 0x56  --dump 0x1fa000 0xf 
 
 ## Minimal cartridge boot test
 
