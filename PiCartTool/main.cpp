@@ -1026,7 +1026,7 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-		if (strcasecmp(argv[argPos], "--writebyte") == 0)
+		if (strcasecmp(argv[argPos], "--writebyte") == 0 || strcasecmp(argv[argPos], "-wb") == 0)
 		{
 			argPos++;
 			int address = std::stoi(argv[argPos], nullptr, 0);
