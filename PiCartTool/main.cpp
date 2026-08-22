@@ -246,6 +246,12 @@ namespace InterfaceControl
 	const int kLED2				= 0b01000000;
 	const int kRelay1			= 0b10000000;
 
+	void UpdateLatch(void)
+	{
+		SetOutputByte(sLatchStates[kLatch]);
+		WriteLatch(kLatch);
+	}
+
 	// Note active low logic
 	void SetReset(void)
 	{
@@ -292,11 +298,12 @@ namespace InterfaceControl
 	{
 		sLatchStates[kLatch] &= ~(0x07 << 1);
 		sLatchStates[kLatch] |= slot << 1;
-	}
-	void UpdateLatch(void)
-	{
-		SetOutputByte(sLatchStates[kLatch]);
-		WriteLatch(kLatch);
+
+		// For performance reasons we only do this when more than one active slot is configured
+		if (activeSlots > 1)
+		{
+			UpdateLatch();
+		}
 	}
 }
 
@@ -740,14 +747,20 @@ int main(int argc, char** argv)
 				SetDataIO2(chip);
 				SendChipCommandErase();
 			}
-			for (int chip = 0; chip < numChips; chip++)
-			{
-				printf("Waiting for chip %d\n" , chip);
-				SetDataIO2(chip);
-				WaitForStatusRegisterEqual(0xff);
-			}
 
-			SetDataIO2(0);
+			for (int slot = 0; slot < activeSlots; slot++)
+			{
+				InterfaceControl::SetActiveSlot(slot);
+
+				for (int chip = 0; chip < numChips; chip++)
+				{
+					printf("Waiting for chip %d\n", chip);
+					SetDataIO2(chip);
+					WaitForStatusRegisterEqual(0xff);
+				}
+
+				SetDataIO2(0);
+			}
 
 			InterfaceControl::ClearLED0();
 			InterfaceControl::UpdateLatch();
@@ -768,7 +781,6 @@ int main(int argc, char** argv)
 			for (int slot = 0; slot < activeSlots; slot++)
 			{
 				InterfaceControl::SetActiveSlot(slot);
-				InterfaceControl::UpdateLatch();
 				WaitForStatusRegisterEqual(0xff);
 			}
 
@@ -843,33 +855,39 @@ int main(int argc, char** argv)
 
 					PerformCartridgeWriteCycle();
 
-					int statusRegister = 0;
-					int iterations = 0;
-					do
+					for (int slot = 0; slot < activeSlots; slot++)
 					{
-						if (gotError)
-						{
-							break;
-						}
+						InterfaceControl::SetActiveSlot(slot);
 
-						C64Control::SetLowROM();
-						C64Control::UpdateLatch();
-						//				delay(0);	// Certainly more than the 20ns for a bus read
-						if (iterations > 50)
+						int statusRegister = 0;
+						int iterations = 0;
+						do
 						{
-							delayMicroseconds(1);
-						}
-						statusRegister = GetInputByte();
-						C64Control::ClearLowROM();
-						C64Control::UpdateLatch();
-						if (iterations++ > 100)
-						{
-							printf("There seems to be a problem verifying the byte at address $%04x\n", address);
-							ReportCartridgeError();
-							gotError = true;
-							break;
-						}
-					} while (statusRegister != theWriteValue);
+							if (gotError)
+							{
+								break;
+							}
+
+							C64Control::SetLowROM();
+							C64Control::UpdateLatch();
+							//				delay(0);	// Certainly more than the 20ns for a bus read
+							if (iterations > 50)
+							{
+								delayMicroseconds(1);
+							}
+							statusRegister = GetInputByte();
+							C64Control::ClearLowROM();
+							C64Control::UpdateLatch();
+							if (iterations++ > 100)
+							{
+								printf("There seems to be a problem verifying the byte at address $%04x slot %d\n", address, slot+1);
+								ReportCartridgeError();
+								gotError = true;
+								break;
+							}
+						} while (statusRegister != theWriteValue);
+					}
+					InterfaceControl::SetActiveSlot(0);
 				}
 
 				if (gotError)

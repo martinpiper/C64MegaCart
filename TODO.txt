@@ -129,3 +129,4 @@ memory returns to Read mode and Bus Read operations from the address just progra
 * Multiple slots
 	--slots 5 --dump 0x0 0x20
 	--slots 5 --dump 0x0 0x20 --erase --dump 0x0 0x20
+	--slots 5 --erase  --dump 0x0 0x20 --write scrollerbanks.bin --dump 0x0 0x20
