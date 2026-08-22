@@ -11,6 +11,7 @@
 	--read <num banks> <filename>	-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file
 	--loop							-l			Loops back to the start of the command line arguments
 	--dump <address> <num bytes>	-d			Dumps the flash memory from address for the number of bytes
+	--slots <num>					-s			The nunber of slots being used, default is 1, from the front slot to the rear slot
 
 For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be pressed before each erase/write pass:
 

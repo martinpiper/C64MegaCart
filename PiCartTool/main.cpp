@@ -20,6 +20,8 @@ int RegisterDelayMicroSeconds = 0;
 // This is slower but more accurate.
 bool flashWriteCommandExtraClocking = false;
 
+int activeSlots = 1;
+
 enum FlashChipType
 {
 	M29F160 = 0,	// Also M29F200, M29F400, M29F800
@@ -285,6 +287,11 @@ namespace InterfaceControl
 	void ClearRelay1(void)
 	{
 		sLatchStates[kLatch] &= ~kRelay1;
+	}
+	void SetActiveSlot(const int slot)
+	{
+		sLatchStates[kLatch] &= ~(0x07 << 1);
+		sLatchStates[kLatch] |= slot << 1;
 	}
 	void UpdateLatch(void)
 	{
@@ -980,44 +987,50 @@ int main(int argc, char** argv)
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
 
-			printf("Dumping...\n");
 			int maxDelayNeeded = 0;
-
-			for (int bytes = 0; bytes < numBytes; bytes++)
+			for (int slot = 0; slot < activeSlots; slot++)
 			{
-				int bank = (address + bytes) / sizeof(bankData);
-				SetDataIO1(0, bank);
-				SetDataIO2(bank >> 8);
+				printf("Dumping slot %d\n", slot + 1);
+				InterfaceControl::SetActiveSlot(slot);
+				InterfaceControl::UpdateLatch();
 
-				DataLatchOut::SetAddress(address + bytes);
-				C64Control::ClearFlashWrite();
-				C64Control::ClearDataLatchOut();
-
-				// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
-				int gotPrevious = -1;
-				int gotNow = -2;
-				int progressiveDelay = 0;
-				while (gotPrevious != gotNow)
+				for (int bytes = 0; bytes < numBytes; bytes++)
 				{
-					gotPrevious = gotNow;
+					int bank = (address + bytes) / sizeof(bankData);
+					SetDataIO1(0, bank);
+					SetDataIO2(bank >> 8);
 
-					C64Control::SetLowROM();
-					C64Control::UpdateLatch();
-					if (progressiveDelay >= 2)
+					DataLatchOut::SetAddress(address + bytes);
+					C64Control::ClearFlashWrite();
+					C64Control::ClearDataLatchOut();
+
+					// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+					int gotPrevious = -1;
+					int gotNow = -2;
+					int progressiveDelay = 0;
+					while (gotPrevious != gotNow)
 					{
-						delayMicroseconds(progressiveDelay / 2);
-						maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
-					}
-					gotNow = (unsigned char)GetInputByte();
-					C64Control::ClearLowROM();
-					C64Control::UpdateLatch();
-					progressiveDelay++;
-				}
+						gotPrevious = gotNow;
 
-				printf(" %02x ", gotNow);
-				fflush(stdout);
+						C64Control::SetLowROM();
+						C64Control::UpdateLatch();
+						if (progressiveDelay >= 2)
+						{
+							delayMicroseconds(progressiveDelay / 2);
+							maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+						}
+						gotNow = (unsigned char)GetInputByte();
+						C64Control::ClearLowROM();
+						C64Control::UpdateLatch();
+						progressiveDelay++;
+					}
+
+					printf(" %02x ", gotNow);
+					fflush(stdout);
+				}
+				printf("\n");
 			}
-			printf("\n");
+
 			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
 			InterfaceControl::ClearLED2();
@@ -1086,6 +1099,15 @@ int main(int argc, char** argv)
 
 			InterfaceControl::ClearLED2();
 			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--slots") == 0 || strcasecmp(argv[argPos], "-s") == 0)
+		{
+			argPos++;
+			activeSlots = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
 
 			continue;
 		}
