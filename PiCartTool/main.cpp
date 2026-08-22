@@ -371,6 +371,7 @@ void SendChipCommandErase(void)
 void SendChipCommandBlockErase(void)
 {
 	// Block erase commands
+	// The actual block (sector in some datasheets) to erase usually comes from the bank register(s), from the upper address bits
 	switch (flashChipType)
 	{
 	case M29F160:
@@ -382,8 +383,12 @@ void SendChipCommandBlockErase(void)
 		SendChipCommand(0xba, 0x30);
 		break;
 	case M29F040:
-		printf("Block erase not implemented for this flash chip type\n");
-		exit(-1);
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0x555, 0x80);
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0xba, 0x30);
 		break;
 	}
 }
