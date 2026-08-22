@@ -21,7 +21,7 @@ Or for example, to read data from a 256 bank cartridge to a file:
 
 Or to dump 15 bytes from 0x1fa000, erase the whole block, dump the same bytes to show they are erased, then write a single byte to 0x1fa007, and then dump the bytes to show the single updated byte:
 
-	--dump 0x1fa000 0xf --eraseblock 253 --dump 0x1fa000 0xf  --writebyte 0x1fa007 0x56  --dump 0x1fa000 0xf 
+	--dump 0x1fa000 0xf --eraseblock 253 --dump 0x1fa000 0xf  --writebyte 0x1fa007 0x56  --dump 0x1fa000 0xf
 
 ## Minimal cartridge boot test
 
