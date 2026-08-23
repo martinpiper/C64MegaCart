@@ -1139,7 +1139,6 @@ int main(int argc, char** argv)
 			SetDataIO1(0, 0);
 			SetDataIO2(0);
 
-			int maxDelayNeeded = 0;
 			for (int slot = 0; slot < activeSlots; slot++)
 			{
 				printf("Dumping serial slot %d\n", slot + 1);
