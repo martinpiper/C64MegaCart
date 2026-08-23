@@ -78,39 +78,6 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 
-* Vice driver
-	https://master.dl.sourceforge.net/project/vice-emu/releases/vice-3.1.tar.gz?viasf=1
-	D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\doc\building\Win32-MSVC-Howto.txt
-		"D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\generate_msvc14_project.bat"
-		"D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\vs14\vice.sln"
-		x64sc startup project
-			Build: DX Debug - Win32
-			After failures, build again, not rebuild, just build (yes really)
-	-cartc64megacart "C:\work\C64MegaCart\PiCartTool\scrollerbanks.bin"
-	-autostartprgmode 1 -cartc64megacart "C:\temp\t.bin" -autostart "C:\work\C64MegaCart\FlashWriteTest.prg"
-	TODO:
-		* D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\c64\c64cart.h #define C64CART_ROM_LIMIT (2048 * 1024)
-			>> Aftually C64MegaCart can be up to 128MB of Flash
-		* Where is this enabled? FEATURE_CPUMEMHISTORY
-			> D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\config.h.in
-			D:\Work\Vice-3.1-with-C64MegaCart\vice-3.1\src\arch\win32\msvc\ide-config.h
-				/* FIXME: Doesn't work with the rewrite. #define FEATURE_CPUMEMHISTORY 1*/
-		* Note: /* FIXME: some models support non-uniform sector layout */
-	> Build: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/tree/main/vice-3.1/data
-
-
-
-* Relays: https://www.mouser.sg/c/electromechanical/relays-contactors-solenoids/low-signal-relays-pcb/?q=signal%20relay&coil%20current=10%20mA~~50%20mA&coil%20type=Non-Latching&coil%20voltage=5%20VDC&relay%20contact%20form=1%20Form%20A%20%28SPST-NO%29&normallystocked=y&sort=pricing&rp=electromechanical%2Frelays-contactors-solenoids%2Flow-signal-relays-pcb%7C~Coil%20Current%7C~Coil%20Type
-	Can be driven by the MOSFET level shifters
-	https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1F-DC5?qs=VO24nqdQNUCxpZtfAaMOMg%3D%3D
-	Tape: https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1F-TR-DC5?qs=PuRzBkp%252Brz5%2FZcGkdvZTsw%3D%3D
-	Solder pin: https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1P-DC5?qs=sQVrL4YZhsQ8oRG2i%2FXEVA%3D%3D
-	>> CartToolV3.pdsprj including G6L-1P-DC5 https://www.mouser.sg/ProductDetail/Omron-Electronics/G6L-1P-DC5?qs=sQVrL4YZhsQ8oRG2i%2FXEVA%3D%3D
-		* Done: Need to connect
-		>> Uses what was LED4 output for the relay.
-		>> The cart connector and power LED now uses CartVCC. Note the debug header still uses VCC.
-	
-
 
 * LEDs WP7113SURDK
 	LED forward voltage resistor calculator: https://www.digikey.com/en/resources/conversion-calculators/conversion-calculator-led-series-resistor
@@ -123,14 +90,6 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * Check level shifter resistor placement on 5 slot board with respect to the level shifter
-
-
-
-* Multiple slots
-	--slots 5 --dump 0x0 0x20
-	--slots 5 --dump 0x0 0x20 --erase --dump 0x0 0x20
-	--slots 5 --erase  --dump 0x0 0x20 --write scrollerbanks.bin --dump 0x0 0x20
-
 
 
 
