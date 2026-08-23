@@ -244,3 +244,8 @@
 
 * When debugging PiCartTool configuration with cartridhe hardware and reading/writing is unreliable then try using commnad line option "--cfwdci 4". This simulates the dot clock and often resolves unreliable cartridge operation.
 	Also try option command line option "--cfwec"
+
+
+
+* Gmod2 parallel serial EPROM erase and write...
+	--slots 2 --cfwdci 4 --cfct 1 --dumpserial 0 0x10 --eraseserial --dumpserial 0 0x10 --writeserial ExampleEEPROM.bin --dumpserial 0x0000 0x10 --dumpserial 0x03f8 0x10
