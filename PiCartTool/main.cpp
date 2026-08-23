@@ -1177,11 +1177,15 @@ int main(int argc, char** argv)
 				// Read command
 				SerialEEPROM_SendBit(1);
 				SerialEEPROM_SendBit(0);
-				// Send address...
-				for (int i = 10; i >= 0; i--)
+
+				// Send address... 10 bits ORG=1
+				for (int i = 9; i >= 0; i--)
 				{
 					SerialEEPROM_SendBit(address & (1<<i));
 				}
+
+				// Skip dummy bit...
+				SerialEEPROM_DoClock();
 
 				for (int i = 0; i < numBytes; i++)
 				{
@@ -1192,8 +1196,6 @@ int main(int argc, char** argv)
 
 				printf("\n");
 			}
-
-			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
 			InterfaceControl::ClearLED2();
 			InterfaceControl::UpdateLatch();
