@@ -534,6 +534,67 @@ void SetDataIO2(int data)
 	C64Control::UpdateLatch();
 }
 
+// Can be configurable later on...
+int kSerialEEPROM_DataOut		= 0b10000000;
+int kSerialEEPROM_ChipSelect	= 0b01000000;
+int kSerialEEPROM_Clock			= 0b00100000;
+int kSerialEEPROM_DataIn		= 0b00010000;
+int kSerialEEPROM_IOAddress = 0;
+int serialState = 0;
+
+void SerialEEPROM_DoClock(void)
+{
+	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
+	serialState |= kSerialEEPROM_Clock;
+	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
+	serialState &= ~kSerialEEPROM_Clock;
+	// But no need to send serialState yet... Wait for the next data...
+}
+
+void SerialEEPROM_Reset(void)
+{
+	SetDataIO1(kSerialEEPROM_IOAddress, 0);
+	serialState = kSerialEEPROM_ChipSelect;
+	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
+}
+
+void SerialEEPROM_SendBit(const int bit)
+{
+	serialState = kSerialEEPROM_ChipSelect;
+	if (bit)
+	{
+		serialState |= kSerialEEPROM_DataIn;
+	}
+	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
+	SerialEEPROM_DoClock();
+}
+
+int SerialEEPROM_ReadByte(void)
+{
+	int theByte = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		C64Control::ClearDataLatchOut();
+		C64Control::SetRead();
+		C64Control::SetIO1();
+		C64Control::UpdateLatch();
+		int byte = GetInputByte();
+		theByte <<= 1;
+		if (byte & kSerialEEPROM_DataOut)
+		{
+//			printf("1"); // Debug
+			theByte |= 1;
+		}
+		else
+		{
+//			printf("0"); // Debug
+		}
+		SerialEEPROM_DoClock();
+	}
+	return theByte;
+}
+
+
 void AlternateLED2(void)
 {
 	static bool alternate = false;
@@ -1055,6 +1116,78 @@ int main(int argc, char** argv)
 					printf(" %02x ", gotNow);
 					fflush(stdout);
 				}
+				printf("\n");
+			}
+
+			printf("maxDelayNeeded = %d\n", maxDelayNeeded);
+
+			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--dumpserial") == 0 || strcasecmp(argv[argPos], "-ds") == 0)
+		{
+			argPos++;
+			int address = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+			int numBytes = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			int maxDelayNeeded = 0;
+			for (int slot = 0; slot < activeSlots; slot++)
+			{
+				printf("Dumping serial slot %d\n", slot + 1);
+				InterfaceControl::SetActiveSlot(slot);
+				InterfaceControl::UpdateLatch();
+
+				C64Control::ClearHighROM();
+				C64Control::ClearLowROM();
+
+				// https://www.st.com/resource/en/datasheet/m93c76-r.pdf
+				/*
+				Chip: m93C86
+				Page 8
+				Each instruction is preceded by a rising edge on Chip Select Input (S) with Serial Clock (C) being held low.
+					
+				A start bit, which is the first '1' read on Serial Data Input (D) during the rising edge of Serial Clock (C).
+					
+				Two op-code bits, read on Serial Data Input (D) during the rising edge of Serial Clock (C). (Some
+				instructions also use the first two bits of the address to define the op - code)
+					
+				The address bits of the byte or word that is to be accessed.
+				For the M93C86, the address is made up of 10 bits for the x16 organization or 11 bits for the x8 organization
+				Page 9 for M93C86
+				READ Read Data from Memory 1 10 A10-A0 Q7-Q0
+				*/
+
+				C64Control::SetIO1();
+				C64Control::UpdateLatch();
+
+				// Reset instruction
+				SerialEEPROM_Reset();
+				// Start bit
+				SerialEEPROM_SendBit(1);
+
+				// Read command
+				SerialEEPROM_SendBit(1);
+				SerialEEPROM_SendBit(0);
+				// Send address...
+				for (int i = 10; i >= 0; i--)
+				{
+					SerialEEPROM_SendBit(address & (1<<i));
+				}
+
+				for (int i = 0; i < numBytes; i++)
+				{
+					int byte = SerialEEPROM_ReadByte();
+					printf(" %02x ", byte);
+					fflush(stdout);
+				}
+
 				printf("\n");
 			}
 
