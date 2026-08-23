@@ -9,12 +9,15 @@
 														This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at 0x1fa000
 	--write <filename>						-w			Writes the file to the flash memory
 	--writeserial <filename>				-ws			Writes the file to the serial EEPROM memory
-	--writebyte <address> <byte>			-wb			Write a single byte to the address
-	--read <num banks> <filename>			-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file
+	--writebyte <address> <byte>			-wb			Write a single byte to the address.
+	--read <num banks> <filename>			-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file. Only the first slot.
+	--readserial <filename>					-rs			Reads the whole serial EEPROM and writes the data to the filename as a binary file. Only the first slot.
 	--loop									-l			Loops back to the start of the command line arguments
 	--dump <address> <num bytes>			-d			Dumps the flash memory from address for the number of bytes
 	--dumpserial <address> <num bytes>		-ds			Dumps the serial EEPROM memory from address for the number of bytes
 	--slots <num>							-s			The nunber of slots being used, default is 1, from the front slot to the rear slot
+
+
 
 For example, to repeatedly erase and write a file to the cartridge while waiting for the button to be pressed before each erase/write pass:
 

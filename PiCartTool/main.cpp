@@ -1067,12 +1067,19 @@ int main(int argc, char** argv)
 			argPos++;
 			printf("Erasing one block at bank %d\n" , bank);
 			// Write some data to the flash, using the erase block command sequence
+			DataLatchOut::SetAddress(0);
 			SetDataIO1(0, bank);
 			SetDataIO2(bank >> 8);
 
 			SendChipCommandBlockErase();
-			//	DataLatchOut::SetAddress(0);
-			WaitForStatusRegisterEqual(0xff);
+
+			for (int slot = 0; slot < activeSlots; slot++)
+			{
+				InterfaceControl::SetActiveSlot(slot);
+				WaitForStatusRegisterEqual(0xff);
+			}
+
+			InterfaceControl::SetActiveSlot(0);
 
 			InterfaceControl::ClearLED0();
 			InterfaceControl::UpdateLatch();
@@ -1225,8 +1232,6 @@ int main(int argc, char** argv)
 			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
-			SetDataIO1(0, 0);
-			SetDataIO2(0);
 
 			for (int slot = 0; slot < activeSlots; slot++)
 			{
@@ -1287,6 +1292,60 @@ int main(int argc, char** argv)
 			continue;
 		}
 
+		if (strcasecmp(argv[argPos], "--readserial") == 0 || strcasecmp(argv[argPos], "-rs") == 0)
+		{
+			argPos++;
+			fp = fopen(argv[argPos], "wb");
+			argPos++;
+
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+
+			printf("Reading serial\n");
+
+			SerialEEPROM_Init();
+
+			// Reset instruction
+			SerialEEPROM_Reset();
+			// Start bit
+			SerialEEPROM_SendBit(1);
+
+			// Read command
+			SerialEEPROM_SendBit(1);
+			SerialEEPROM_SendBit(0);
+
+			// Send address...
+			for (int i = kSerialEEPROM_AddressBits - 1; i >= 0; i--)
+			{
+				SerialEEPROM_SendBit(0);
+			}
+
+			// Skip dummy bit...
+			SerialEEPROM_DoClock();
+
+			for (int i = 0; i < (1<<kSerialEEPROM_AddressBits); i++)
+			{
+				if ((i & 0xff) == 0)
+				{
+					printf(".");
+					fflush(stdout);
+				}
+
+				int byte = SerialEEPROM_ReadByte();
+				fputc(byte, fp);
+				byte = SerialEEPROM_ReadByte();
+				fputc(byte, fp);
+			}
+
+			fclose(fp);
+			printf("\nDone reading serial\n");
+
+			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
 		if (strcasecmp(argv[argPos], "--writebyte") == 0 || strcasecmp(argv[argPos], "-wb") == 0)
 		{
 			argPos++;
@@ -1316,30 +1375,37 @@ int main(int argc, char** argv)
 			C64Control::ClearHighROM();
 			C64Control::UpdateLatch();
 
-			// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
-			int gotPrevious = -1;
-			int gotNow = -2;
-			int progressiveDelay = 0;
-			while ((gotPrevious != gotNow) && (gotNow != byte))
+			for (int slot = 0; slot < activeSlots; slot++)
 			{
-				gotPrevious = gotNow;
+				InterfaceControl::SetActiveSlot(slot);
 
-				C64Control::SetLowROM();
-				C64Control::UpdateLatch();
-				if (progressiveDelay >= 2)
+				// Tries two reads without any delay, then progressively increases the delay until we get two reads that are the same
+				int gotPrevious = -1;
+				int gotNow = -2;
+				int progressiveDelay = 0;
+				while ((gotPrevious != gotNow) && (gotNow != byte))
 				{
-					delayMicroseconds(progressiveDelay / 2);
-					maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+					gotPrevious = gotNow;
+
+					C64Control::SetLowROM();
+					C64Control::UpdateLatch();
+					if (progressiveDelay >= 2)
+					{
+						delayMicroseconds(progressiveDelay / 2);
+						maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay / 2);
+					}
+					if (progressiveDelay > 20)
+					{
+						printf("Error the read delay is too long, perhaps the flash write is failing...\n");
+						break;
+					}
+					gotNow = (unsigned char)GetInputByte();
+					C64Control::ClearLowROM();
+					C64Control::UpdateLatch();
+					progressiveDelay++;
 				}
-				if (progressiveDelay > 20)
-				{
-					printf("Error the raad delay is too long, perhaps the flash write is failing...\n");
-					break;
-				}
-				gotNow = (unsigned char)GetInputByte();
-				C64Control::ClearLowROM();
-				C64Control::UpdateLatch();
-				progressiveDelay++;
+
+				InterfaceControl::SetActiveSlot(0);
 			}
 
 			printf("\n");
