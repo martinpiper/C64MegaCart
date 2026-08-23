@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CartBoot.bin" />
+    <None Include="CartBoot512KB.bin" />
     <None Include="Demo14Cartridge.bin" />
     <None Include="Programmer.py" />
     <None Include="scrollerbanks.bin" />

@@ -239,3 +239,8 @@
 		* Note: /* FIXME: some models support non-uniform sector layout */
 	> Build: https://github.com/martinpiper/Vice-3.1-with-C64MegaCart/tree/main/vice-3.1/data
 
+
+
+
+* When debugging PiCartTool configuration with cartridhe hardware and reading/writing is unreliable then try using commnad line option "--cfwdci 4". This simulates the dot clock and often resolves unreliable cartridge operation.
+	Also try option command line option "--cfwec"

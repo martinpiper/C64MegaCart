@@ -1136,6 +1136,8 @@ int main(int argc, char** argv)
 			argPos++;
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
+			SetDataIO1(0, 0);
+			SetDataIO2(0);
 
 			int maxDelayNeeded = 0;
 			for (int slot = 0; slot < activeSlots; slot++)
@@ -1184,7 +1186,7 @@ int main(int argc, char** argv)
 				for (int i = 0; i < numBytes; i++)
 				{
 					int byte = SerialEEPROM_ReadByte();
-					printf(" %02x ", byte);
+					printf("%02x ", byte);
 					fflush(stdout);
 				}
 

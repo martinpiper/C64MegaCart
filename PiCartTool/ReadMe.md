@@ -49,7 +49,7 @@ The advanced configuration command line options must be used before the cartridg
 | ---			| ---									| ---				| ---								|
 | C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2					| 60 seconds						|
 | Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
-| Gmod2			| --cfct 1								| 0.5				| 44 seconds						|
+| Gmod2			| --cfwdci 4 --cfct 1					| 0.5				| 24 seconds						|
 
 ### Advanced configuration options
 
