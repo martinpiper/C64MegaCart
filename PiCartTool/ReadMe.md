@@ -53,9 +53,11 @@ The advanced configuration command line options must be used before the cartridg
 
 | Type			| Command line options					| Size (megabytes)	| Typical time to erase and write	|
 | ---			| ---									| ---				| ---								|
-| C64MegaCart	| --cfwch --cfwdci 0 --crdms 0 --cfwnec	| 2					| 60 seconds						|
+| C64MegaCart	| None needed, default config			| 2					| 60 seconds						|
 | Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
 | Gmod2			| --cfwdci 4 --cfct 1					| 0.5				| 24 seconds						|
+
+Default options are: --cfwch --cfwdci 0 --crdms 0 --cfwnec
 
 ### Advanced configuration options
 
