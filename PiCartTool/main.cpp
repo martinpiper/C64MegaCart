@@ -595,6 +595,32 @@ int SerialEEPROM_ReadByte(void)
 	return theByte;
 }
 
+bool SerialEEPROM_WaitForReady(void)
+{
+	SerialEEPROM_Reset();
+	int iterations = 0;
+	C64Control::ClearDataLatchOut();
+	C64Control::SetRead();
+	C64Control::SetIO1();
+	C64Control::UpdateLatch();
+	while (iterations < 5000)
+	{
+		int byte = GetInputByte();
+//		printf("%02x ", byte);
+//		fflush(stdout);
+		if ((byte & kSerialEEPROM_DataOut))
+		{
+			printf("EEPROM ready %d\n", iterations);
+			return true;
+		}
+		delay(1);
+		C64Control::ToggleDotClock();
+		iterations++;
+	}
+	printf("SerialEEPROM_WaitForReady had problems\n");
+	return false;
+}
+
 
 void AlternateLED2(void)
 {
@@ -1272,6 +1298,81 @@ int main(int argc, char** argv)
 			argPos++;
 			activeSlots = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
+
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--eraseserial") == 0 || strcasecmp(argv[argPos], "-es") == 0)
+		{
+			argPos++;
+			InterfaceControl::SetLED2();
+			InterfaceControl::UpdateLatch();
+			SetDataIO1(0, 0);
+			SetDataIO2(0);
+
+			for (int slot = 0; slot < activeSlots; slot++)
+			{
+				printf("Erasing serial slot %d\n", slot + 1);
+				InterfaceControl::SetActiveSlot(slot);
+				InterfaceControl::UpdateLatch();
+
+				C64Control::ClearHighROM();
+				C64Control::ClearLowROM();
+
+				C64Control::SetIO1();
+				C64Control::UpdateLatch();
+
+				// Reset instruction
+				SerialEEPROM_Reset();
+				// Start bit
+				SerialEEPROM_SendBit(1);
+
+				// Write Enable command
+				SerialEEPROM_SendBit(0);
+				SerialEEPROM_SendBit(0);
+
+				// Send expected address...
+				SerialEEPROM_SendBit(1);
+				SerialEEPROM_SendBit(1);
+				for (int i = 0; i < kSerialEEPROM_AddressBits - 2; i++)
+				{
+					SerialEEPROM_SendBit(0);
+				}
+
+				if (!SerialEEPROM_WaitForReady())
+				{
+					ReportCartridgeError();
+					break;
+				}
+
+				// Reset instruction
+				SerialEEPROM_Reset();
+				// Start bit
+				SerialEEPROM_SendBit(1);
+
+				// Erase command
+				SerialEEPROM_SendBit(0);
+				SerialEEPROM_SendBit(0);
+
+				// Send expected address...
+				SerialEEPROM_SendBit(1);
+				SerialEEPROM_SendBit(0);
+				for (int i = 0 ; i < kSerialEEPROM_AddressBits - 2; i++)
+				{
+					SerialEEPROM_SendBit(0);
+				}
+
+				if (!SerialEEPROM_WaitForReady())
+				{
+					ReportCartridgeError();
+					break;
+				}
+
+				printf("\n");
+			}
+
+			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
 
 			continue;
 		}

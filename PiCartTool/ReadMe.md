@@ -3,10 +3,12 @@
 	Long form								Short form	Documentation
 	--waitbutton							-b			Waits for the button on the programmer board to be pressed
 	--erase									-e			Erases the whole flash memory, first chip only
+	--eraseserial							-es			Erases the whole serial EEPROM memory
 	--erasechips <num chips>				-ec			Erases the whole flash memory for the number of chips, in parallel
 	--eraseblock <number>					-eb			Erases one block of the flash memory using the number value to choose which block. Each flash chip has 256 blocks (banks)
 														This depends on the geometry of the flash memory. For example for the chip M29F160FT55N3E2, using 253 will erase the 8KB block at 0x1fa000
 	--write <filename>						-w			Writes the file to the flash memory
+	--writeserial <filename>				-ws			Writes the file to the serial EEPROM memory
 	--writebyte <address> <byte>			-wb			Write a single byte to the address
 	--read <num banks> <filename>			-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file
 	--loop									-l			Loops back to the start of the command line arguments
