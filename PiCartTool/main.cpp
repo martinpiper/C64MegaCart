@@ -540,6 +540,7 @@ int kSerialEEPROM_ChipSelect	= 0b01000000;
 int kSerialEEPROM_Clock			= 0b00100000;
 int kSerialEEPROM_DataIn		= 0b00010000;
 int kSerialEEPROM_IOAddress = 0;
+int kSerialEEPROM_AddressBits = 10;
 int serialState = 0;
 
 void SerialEEPROM_DoClock(void)
@@ -1177,8 +1178,8 @@ int main(int argc, char** argv)
 				SerialEEPROM_SendBit(1);
 				SerialEEPROM_SendBit(0);
 
-				// Send address... 10 bits ORG=1
-				for (int i = 9; i >= 0; i--)
+				// Send address...
+				for (int i = kSerialEEPROM_AddressBits-1; i >= 0; i--)
 				{
 					SerialEEPROM_SendBit(address & (1<<i));
 				}
