@@ -30,6 +30,8 @@ enum FlashChipType
 
 FlashChipType flashChipType = M29F160;
 
+void ReportCartridgeError(void);
+
 void safeDelayMicroseconds(int delay)
 {
 	if (delay > 0)
@@ -543,6 +545,18 @@ int kSerialEEPROM_IOAddress = 0;
 int kSerialEEPROM_AddressBits = 10;
 int serialState = 0;
 
+void SerialEEPROM_Init(void)
+{
+	SetDataIO1(0, 0);
+	SetDataIO2(0);
+
+	C64Control::ClearHighROM();
+	C64Control::ClearLowROM();
+
+	C64Control::SetIO1();
+	C64Control::UpdateLatch();
+}
+
 void SerialEEPROM_DoClock(void)
 {
 	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
@@ -610,7 +624,7 @@ bool SerialEEPROM_WaitForReady(void)
 //		fflush(stdout);
 		if ((byte & kSerialEEPROM_DataOut))
 		{
-			printf("EEPROM ready %d\n", iterations);
+//			printf("EEPROM ready %d\n", iterations);
 			return true;
 		}
 		delay(1);
@@ -619,6 +633,53 @@ bool SerialEEPROM_WaitForReady(void)
 	}
 	printf("SerialEEPROM_WaitForReady had problems\n");
 	return false;
+}
+
+void SerialEEPROM_WaitForReadyAllslots(bool &gotError)
+{
+	for (int slot = 0; slot < activeSlots; slot++)
+	{
+		if (gotError)
+		{
+			break;
+		}
+		InterfaceControl::SetActiveSlot(slot);
+
+		if (!SerialEEPROM_WaitForReady())
+		{
+			ReportCartridgeError();
+			gotError = true;
+			break;
+		}
+	}
+}
+
+void SerialEEPROM_SendWriteEnable(void)
+{
+	// Reset instruction
+	SerialEEPROM_Reset();
+	// Start bit
+	SerialEEPROM_SendBit(1);
+
+	// Write Enable command
+	SerialEEPROM_SendBit(0);
+	SerialEEPROM_SendBit(0);
+
+	// Send expected address...
+	SerialEEPROM_SendBit(1);
+	SerialEEPROM_SendBit(1);
+	for (int i = 0; i < kSerialEEPROM_AddressBits - 2; i++)
+	{
+		SerialEEPROM_SendBit(0);
+	}
+}
+
+void SerialEEPROM_SendByte(int byte)
+{
+	for (int i = 7; i >= 0; i--)
+	{
+		SerialEEPROM_SendBit(byte & (1 << i));
+	}
 }
 
 
@@ -803,6 +864,8 @@ int main(int argc, char** argv)
 
 		// Default to the first slot...
 		InterfaceControl::SetActiveSlot(0);
+		InterfaceControl::UpdateLatch();
+
 		// Enable power
 		InterfaceControl::SetRelay1();
 		InterfaceControl::UpdateLatch();
@@ -1107,7 +1170,6 @@ int main(int argc, char** argv)
 			{
 				printf("Dumping slot %d\n", slot + 1);
 				InterfaceControl::SetActiveSlot(slot);
-				InterfaceControl::UpdateLatch();
 
 				for (int bytes = 0; bytes < numBytes; bytes++)
 				{
@@ -1170,10 +1232,8 @@ int main(int argc, char** argv)
 			{
 				printf("Dumping serial slot %d\n", slot + 1);
 				InterfaceControl::SetActiveSlot(slot);
-				InterfaceControl::UpdateLatch();
 
-				C64Control::ClearHighROM();
-				C64Control::ClearLowROM();
+				SerialEEPROM_Init();
 
 				// https://www.st.com/resource/en/datasheet/m93c76-r.pdf
 				/*
@@ -1192,8 +1252,6 @@ int main(int argc, char** argv)
 				READ Read Data from Memory 1 10 A10-A0 Q7-Q0
 				*/
 
-				C64Control::SetIO1();
-				C64Control::UpdateLatch();
 
 				// Reset instruction
 				SerialEEPROM_Reset();
@@ -1304,74 +1362,123 @@ int main(int argc, char** argv)
 
 		if (strcasecmp(argv[argPos], "--eraseserial") == 0 || strcasecmp(argv[argPos], "-es") == 0)
 		{
+			bool gotError = false;
 			argPos++;
+
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
-			SetDataIO1(0, 0);
-			SetDataIO2(0);
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::UpdateLatch();
+
+			SerialEEPROM_Init();
+
+			SerialEEPROM_SendWriteEnable();
+
+			// Reset instruction
+			SerialEEPROM_Reset();
+			// Start bit
+			SerialEEPROM_SendBit(1);
+
+			// Erase command
+			SerialEEPROM_SendBit(0);
+			SerialEEPROM_SendBit(0);
+
+			// Send expected address...
+			SerialEEPROM_SendBit(1);
+			SerialEEPROM_SendBit(0);
+			for (int i = 0; i < kSerialEEPROM_AddressBits - 2; i++)
 			{
-				printf("Erasing serial slot %d\n", slot + 1);
-				InterfaceControl::SetActiveSlot(slot);
-				InterfaceControl::UpdateLatch();
-
-				C64Control::ClearHighROM();
-				C64Control::ClearLowROM();
-
-				C64Control::SetIO1();
-				C64Control::UpdateLatch();
-
-				// Reset instruction
-				SerialEEPROM_Reset();
-				// Start bit
-				SerialEEPROM_SendBit(1);
-
-				// Write Enable command
 				SerialEEPROM_SendBit(0);
-				SerialEEPROM_SendBit(0);
-
-				// Send expected address...
-				SerialEEPROM_SendBit(1);
-				SerialEEPROM_SendBit(1);
-				for (int i = 0; i < kSerialEEPROM_AddressBits - 2; i++)
-				{
-					SerialEEPROM_SendBit(0);
-				}
-
-				if (!SerialEEPROM_WaitForReady())
-				{
-					ReportCartridgeError();
-					break;
-				}
-
-				// Reset instruction
-				SerialEEPROM_Reset();
-				// Start bit
-				SerialEEPROM_SendBit(1);
-
-				// Erase command
-				SerialEEPROM_SendBit(0);
-				SerialEEPROM_SendBit(0);
-
-				// Send expected address...
-				SerialEEPROM_SendBit(1);
-				SerialEEPROM_SendBit(0);
-				for (int i = 0 ; i < kSerialEEPROM_AddressBits - 2; i++)
-				{
-					SerialEEPROM_SendBit(0);
-				}
-
-				if (!SerialEEPROM_WaitForReady())
-				{
-					ReportCartridgeError();
-					break;
-				}
-
-				printf("\n");
 			}
 
+			SerialEEPROM_WaitForReadyAllslots(gotError);
+
+			printf("\n");
+
 			InterfaceControl::ClearLED2();
+			InterfaceControl::UpdateLatch();
+
+			continue;
+		}
+
+
+		if (strcasecmp(argv[argPos], "--writeserial") == 0 || strcasecmp(argv[argPos], "-ws") == 0)
+		{
+			bool gotError = false;
+			argPos++;
+
+			InterfaceControl::SetLED1();
+			InterfaceControl::UpdateLatch();
+
+			printf("Writing serial...\n");
+
+			// Write some data to the flash, using the program command sequence
+			fp = fopen(argv[argPos], "rb");
+			argPos++;
+			if (fp == 0)
+			{
+				printf("Error reading input file\n");
+				continue;
+			}
+
+			size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
+			fclose(fp);
+
+			if (numBytes == 0)
+			{
+				break;
+			}
+
+			printf("Got bytes %d\n", numBytes);
+
+			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::UpdateLatch();
+
+			SerialEEPROM_Init();
+
+			SerialEEPROM_SendWriteEnable();
+
+			for (int address = 0; address < (int)numBytes; address += 2)
+			{
+				if ((address & 0xff) == 0)
+				{
+					printf(".");
+					fflush(stdout);
+				}
+
+				// Reset instruction
+				SerialEEPROM_Reset();
+				// Start bit
+				SerialEEPROM_SendBit(1);
+
+				// Write command
+				SerialEEPROM_SendBit(0);
+				SerialEEPROM_SendBit(1);
+
+				// Send address...
+				for (int i = kSerialEEPROM_AddressBits - 1; i >= 0; i--)
+				{
+					SerialEEPROM_SendBit((address >> 1) & (1 << i));
+				}
+
+				SerialEEPROM_SendByte(bankData[address]);
+				SerialEEPROM_SendByte(bankData[address+1]);
+
+				SerialEEPROM_WaitForReadyAllslots(gotError);
+
+				if (gotError)
+				{
+					break;
+				}
+			}
+
+			printf("\nWrite serial done\n");
+
+			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::UpdateLatch();
+
+			InterfaceControl::ClearLED1();
 			InterfaceControl::UpdateLatch();
 
 			continue;
