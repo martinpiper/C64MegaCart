@@ -77,6 +77,8 @@ These options alter the timings and other signals expected by different cartridg
 
 Video showing the whole process: https://youtu.be/GBg5k46B5Pw
 
+Video showing the five slot programmer: https://youtu.be/I6Ru7vbInTw
+
 This software uses: https://github.com/WiringPi/WiringPi
 
 	sudo apt install git
