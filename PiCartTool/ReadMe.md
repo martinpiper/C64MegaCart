@@ -53,9 +53,9 @@ The advanced configuration command line options must be used before the cartridg
 
 | Type			| Command line options					| Size (megabytes)	| Typical time to erase and write	|
 | ---			| ---									| ---				| ---								|
-| C64MegaCart	| None needed, default config			| 2					| 60 seconds						|
+| C64MegaCart	| None needed, use default config		| 2					| 62 seconds						|
 | Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
-| Gmod2			| --cfwdci 4 --cfct 1					| 0.5				| 24 seconds						|
+| Gmod2			| --cfwec --cfct 1						| 0.5 + 2KB EEPROM	| 20 seconds						|
 
 Default options are: --cfwch --cfwdci 0 --crdms 0 --cfwnec
 
@@ -96,7 +96,7 @@ To compile the programmer tool:
 
 	git clone https://github.com/martinpiper/C64MegaCart.git
 	cd C64MegaCart/PiCartTool
-	gcc main.cpp -o PiCartTool -lwiringPi -O3
+	gcc main.cpp Hardware.cpp -o PiCartTool -lstdc++ -lwiringPi -O3
 
 You can then use this command to test erase and write the cartridge:
 
@@ -110,16 +110,9 @@ Usually gcc builds will work fine, this is more for remote development and debug
 
 MSDev->Tools->Options->Cross Platform->Connection Manager
 Default Raspberry Pi login: user:pi password:raspberry
+Configuration Manager: ARM64
 
-
-	cd ~/projects/PiCartTool/bin/ARM/Release/
+	cd ~/projects/PiCartTool/bin/ARM64/Release/
 	time ./PiCartTool.out --erase --write ../../../scrollerbanks.bin
 	diff -q ../../../scrollerbanks.bin ../../../readdata.bin
 	cmp -l ../../../scrollerbanks.bin ../../../readdata.bin | mawk 'function oct2dec(oct,     dec) {for (i = 1; i <= length(oct); i++) {dec *= 8; dec += substr(oct, i, 1)}; return dec} {printf "%08X %02X %02X\n", $1-1, oct2dec($2), oct2dec($3)}'
-
-
-
-RaspberryPi5 erase 2MB + write 2MB + read/verify 2MB cycle = 1m17s
-The PiZero took about 2m for the same erase/write
-The full read/verify on its own takes 17s
-It's probably not needed since the write uses a read to verify the write has completed.

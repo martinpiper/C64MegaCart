@@ -7,8 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include <string>
-
-// projects/PiCartTool/bin/ARM/Release/PiCartTool.out
+#include "Hardware.h"
 
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 bool flashWriteCommandIsHiROM = true;
@@ -40,45 +39,6 @@ void safeDelayMicroseconds(int delay)
 	}
 }
 
-int GetInputByte(void)
-{
-	int ret = 0;
-	for (int i = 0; i < 8; i++)
-	{
-		int pinState = digitalRead(i);
-		if (pinState == HIGH)
-		{
-			ret |= 1 << i;
-		}
-	}
-	return ret;
-}
-
-static volatile std::atomic<int> sCachedSignals[28];
-
-void SetOutputByte(int value)
-{
-	for (int i = 8; i < 16; i++)
-	{
-		int intendedSignal = value & 0x01;
-		if (sCachedSignals[i] != intendedSignal)
-		{
-			digitalWrite(i, intendedSignal ? HIGH : LOW);
-			sCachedSignals[i] = intendedSignal;
-		}
-
-		value >>= 1;
-	}
-}
-
-void WriteLatch(int latch)
-{
-	digitalWrite(16 + latch, LOW);
-	digitalWrite(16 + latch, LOW);
-	digitalWrite(16 + latch, LOW);
-	digitalWrite(16 + latch, LOW);
-	digitalWrite(16 + latch, HIGH);
-}
 
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
 
@@ -444,38 +404,6 @@ void WaitForStatusRegisterEqual(int waitFor)
 	} while (statusRegister != waitFor);
 }
 
-void InitDevice(void)
-{
-	printf("wiringPiSetupSys\n");
-	wiringPiSetupGpio();
-	for (int i = 0; i < 28; i++)
-	{
-		sCachedSignals[i] = 0;
-	}
-
-	printf("pinMode\n");
-	// Don't forget the gpio exportx in the project post build config
-	for (int i = 0; i < 8; i++)
-	{
-		pinMode(i, INPUT);	// D0..7
-		pullUpDnControl(i, PUD_OFF);
-	}
-	for (int i = 8; i < 24; i++)
-	{
-		pinMode(i, OUTPUT);
-	}
-	pinMode(24, INPUT);	// PButton
-	pullUpDnControl(24, PUD_UP);
-	// Allows for these to be read from any plugged in cartridge
-	pinMode(25, INPUT);	// _EXROM
-	pullUpDnControl(25, PUD_OFF);
-	pinMode(26, INPUT);	// _GAME
-	pullUpDnControl(26, PUD_OFF);
-	// Read the flash status bit, if connected
-	pinMode(27, INPUT);	// RYBY
-	pullUpDnControl(27, PUD_OFF);
-}
-
 void InitCartTool(void)
 {
 	InterfaceControl::SetReset();
@@ -784,7 +712,7 @@ int main(int argc, char** argv)
 
 	auto start = std::chrono::steady_clock::now();
 
-	InitDevice();
+	HardwareInit();
 	InitCartTool();
 
 	int argPos = 1;
@@ -837,7 +765,7 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-		InitDevice();
+		HardwareInit();
 		InitCartTool();
 
 		InterfaceControl::ClearRelay1();
