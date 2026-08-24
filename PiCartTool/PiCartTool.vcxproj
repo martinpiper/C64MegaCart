@@ -75,9 +75,11 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CartridgeHardware.cpp" />
     <ClCompile Include="CartridgePort.cpp" />
     <ClCompile Include="Hardware.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProgrammerHardware.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.md" />
@@ -91,8 +93,10 @@
     <None Include="scrollerbanks.bin" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CartridgeHardware.h" />
     <ClInclude Include="CartridgePort.h" />
     <ClInclude Include="Hardware.h" />
+    <ClInclude Include="ProgrammerHardware.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <Link>

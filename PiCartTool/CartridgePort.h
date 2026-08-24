@@ -57,3 +57,9 @@ namespace InterfaceControl
 }
 
 void ShowCartridgeState();
+
+void InitCartTool(void);
+
+void SetDataIO1(int address, int data);
+
+void SetDataIO2(int data);

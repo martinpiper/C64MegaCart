@@ -70,3 +70,11 @@ void WriteLatch(int latch)
 	digitalWrite(16 + latch, LOW);
 	digitalWrite(16 + latch, HIGH);
 }
+
+void safeDelayMicroseconds(int delay)
+{
+	if (delay > 0)
+	{
+		delayMicroseconds(delay);
+	}
+}
