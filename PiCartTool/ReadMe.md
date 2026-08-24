@@ -96,7 +96,7 @@ To compile the programmer tool:
 
 	git clone https://github.com/martinpiper/C64MegaCart.git
 	cd C64MegaCart/PiCartTool
-	gcc main.cpp Hardware.cpp -o PiCartTool -lstdc++ -lwiringPi -O3
+	gcc main.cpp Hardware.cpp CartridgePort.cpp -o PiCartTool -lstdc++ -lwiringPi -O3
 
 You can then use this command to test erase and write the cartridge:
 

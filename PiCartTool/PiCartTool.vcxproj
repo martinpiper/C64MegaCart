@@ -75,6 +75,7 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CartridgePort.cpp" />
     <ClCompile Include="Hardware.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -90,6 +91,7 @@
     <None Include="scrollerbanks.bin" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CartridgePort.h" />
     <ClInclude Include="Hardware.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
