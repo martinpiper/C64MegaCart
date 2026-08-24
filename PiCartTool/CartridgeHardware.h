@@ -13,6 +13,9 @@ enum FlashChipType
 
 extern FlashChipType flashChipType;
 
+void ResetCartridge(void);
+void ClearCartridgeIO(void);
+
 void SendChipCommand(int address, int data);
 void SendChipCommandErase(void);
 void SendChipCommandBlockErase(void);
@@ -32,6 +35,7 @@ void SerialEEPROM_Init(void);
 void SerialEEPROM_DoClock(void);
 void SerialEEPROM_Reset(void);
 void SerialEEPROM_SendBit(const int bit);
+void SerialEEPROM_SendAddress(const int address);
 int SerialEEPROM_ReadByte(void);
 bool SerialEEPROM_WaitForReady(void);
 void SerialEEPROM_WaitForReadyAllslots(bool& gotError);

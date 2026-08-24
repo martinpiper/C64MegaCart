@@ -14,6 +14,34 @@ bool flashWriteCommandExtraClocking = false;
 
 FlashChipType flashChipType = M29F160;
 
+void ResetCartridge(void)
+{
+	// Reset the cartridge before any operations
+	printf("Before reset\n");
+	ShowCartridgeState();
+	InterfaceControl::SetReset();
+	InterfaceControl::UpdateLatch();
+	printf("During reset\n");
+	ShowCartridgeState();
+	InterfaceControl::ClearReset();
+	InterfaceControl::UpdateLatch();
+	printf("After reset\n");
+	ShowCartridgeState();
+	ClearCartridgeIO();
+	printf("After IO clear\n");
+	ShowCartridgeState();
+}
+
+void ClearCartridgeIO(void)
+{
+	// Clear any cartridge IO, to common values
+	for (int i = 0; i < 256; i++)
+	{
+		SetDataIO1(i, 0);
+		SetDataIO2(i, 0);
+	}
+}
+
 void SendChipCommand(int address, int data)
 {
 	DataLatchOut::SetAddress(address);
@@ -229,6 +257,14 @@ void SerialEEPROM_SendBit(const int bit)
 	}
 	SetDataIO1(kSerialEEPROM_IOAddress, serialState);
 	SerialEEPROM_DoClock();
+}
+
+void SerialEEPROM_SendAddress(const int address)
+{
+	for (int i = kSerialEEPROM_AddressBits - 1; i >= 0; i--)
+	{
+		SerialEEPROM_SendBit(address & (1 << i));
+	}
 }
 
 int SerialEEPROM_ReadByte(void)

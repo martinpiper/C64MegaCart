@@ -63,3 +63,4 @@ void InitCartTool(void);
 void SetDataIO1(int address, int data);
 
 void SetDataIO2(int data);
+void SetDataIO2(int address, int data);

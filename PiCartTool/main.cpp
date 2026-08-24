@@ -105,17 +105,7 @@ int main(int argc, char** argv)
 		InterfaceControl::UpdateLatch();
 		delay(100); // A small delay to allow the relay to physically switch on the cartridge power
 
-		// Reset the cartridge before any operations
-		printf("Before reset\n");
-		ShowCartridgeState();
-		InterfaceControl::SetReset();
-		InterfaceControl::UpdateLatch();
-		printf("During reset\n");
-		ShowCartridgeState();
-		InterfaceControl::ClearReset();
-		InterfaceControl::UpdateLatch();
-		printf("After reset\n");
-		ShowCartridgeState();
+		ResetCartridge();
 
 		if (strcasecmp(argv[argPos], "--erasechips") == 0 || strcasecmp(argv[argPos], "-ec") == 0)
 		{
@@ -501,11 +491,7 @@ int main(int argc, char** argv)
 				SerialEEPROM_SendBit(1);
 				SerialEEPROM_SendBit(0);
 
-				// Send address...
-				for (int i = kSerialEEPROM_AddressBits-1; i >= 0; i--)
-				{
-					SerialEEPROM_SendBit(address & (1<<i));
-				}
+				SerialEEPROM_SendAddress(address);
 
 				// Skip dummy bit...
 				SerialEEPROM_DoClock();
@@ -548,11 +534,7 @@ int main(int argc, char** argv)
 			SerialEEPROM_SendBit(1);
 			SerialEEPROM_SendBit(0);
 
-			// Send address...
-			for (int i = kSerialEEPROM_AddressBits - 1; i >= 0; i--)
-			{
-				SerialEEPROM_SendBit(0);
-			}
+			SerialEEPROM_SendAddress(0);
 
 			// Skip dummy bit...
 			SerialEEPROM_DoClock();
@@ -756,11 +738,7 @@ int main(int argc, char** argv)
 				SerialEEPROM_SendBit(0);
 				SerialEEPROM_SendBit(1);
 
-				// Send address...
-				for (int i = kSerialEEPROM_AddressBits - 1; i >= 0; i--)
-				{
-					SerialEEPROM_SendBit((address >> 1) & (1 << i));
-				}
+				SerialEEPROM_SendAddress(address >> 1);
 
 				SerialEEPROM_SendByte(bankData[address]);
 				SerialEEPROM_SendByte(bankData[address+1]);

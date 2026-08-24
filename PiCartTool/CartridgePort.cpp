@@ -303,3 +303,23 @@ void SetDataIO2(int data)
 	C64Control::ClearIO2();
 	C64Control::UpdateLatch();
 }
+
+void SetDataIO2(int address, int data)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::SetIO2();
+	C64Control::UpdateLatch();
+
+	C64Control::SetDataLatchOut();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+	C64Control::ToggleDotClock();
+	delayMicroseconds(1);
+	C64Control::SetRead();
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+	C64Control::ClearIO2();
+	C64Control::UpdateLatch();
+	C64Control::ToggleDotClock();
+}
