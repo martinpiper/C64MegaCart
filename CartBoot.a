@@ -1,5 +1,5 @@
 ; Assemble the source with: ..\c64\acme.exe -v9 -f plain -o PiCartTool\CartBoot.bin --lib ..\c64\ "CartBoot.a"
-; This is a minimal cartirdge boot ROM, which will dosplay a message and continuously copy data from the cartridge bank to the screen.
+; This is a minimal cartirdge boot ROM, which will display a message and continuously copy data from the cartridge bank to the screen.
 ; This is useful for debugging cartridges and how they behave if power or other signals like IO1/IO2/ROML/ROMH signals are disabled.
 
 ;!to "bin/maincart.bin", plain
