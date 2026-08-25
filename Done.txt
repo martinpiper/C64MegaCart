@@ -256,3 +256,6 @@
 	Also needs the LED updated.
 	Also set the new power/gnd trace line style
 	
+	
+	
+* Need to add dot clock signal to single slot and five slot designs.
