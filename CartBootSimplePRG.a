@@ -1,0 +1,57 @@
+; Assemble the source with: ..\c64\acme.exe -v9 -f plain -o PiCartTool\CartBootSimplePRG.bin --lib ..\c64\ "CartBootSimplePRG.a"
+; This is a minimal cartridge boot ROM, which will copy a prg into memory and then start it.
+; This is useful for running a particular prg from cartridge.
+
+!sal
+!cpu 6510
+!ct pet
+
+!source "stdlib/stdlib.a"
+!source "stdlib/Comparisons.a"
+
+!zn
+*=C64Cartridge_Lo_8K
+!word start
+!word start
++M_CBM80
+
+start
+	+MStopInitStack_X
+	+InitKERNALIOSlowFull_AXY
+	jsr DoDataToMem
+	jmp 2061
+
+DataToMemStart
+!pseudopc $0801 {
+DataToMemStartReal
+	!bin "gmod2 tester.prg",,2
++MCheckNotInIOKernal
+DataToMemEndReal
+}
+
+DataToMemEnd
+DataToMemSize = DataToMemEnd - DataToMemStart
+
+!if DataToMemEndReal >= VIC {
+!error "DataToMemEndReal is over VIC"
+}
+
+!zn
+DoDataToMem
+	ldx #0
+.cl1
+!for .i , (>DataToMemSize)+1 {
+!set .ii = .i - 1
+	lda DataToMemStart + (.ii * $100),x
+	sta DataToMemStartReal + (.ii * $100),x
+}
+	dex
+	bne .cl1
+	rts
+
++MCheckNotInBASICUpwards
+
++MCheckNotInKERNALServiceVectors
+
+*=C64Cartridge_Lo_8K + kSize_8K-1
+!by 0

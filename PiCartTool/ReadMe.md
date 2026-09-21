@@ -37,6 +37,12 @@ Or to dump 15 bytes from 0x1fa000, erase the whole block, dump the same bytes to
 The file CartBoot.bin (assembled from C64MegaCart\CartBoot.a) is a very small minimal cartridge boot which will show a message
 
 	--erase --write CartBoot.bin
+	
+## Cartridge run EEPROM tester
+
+The file CartBootSimplePRG.bin (assembled from C64MegaCart\CartBootSimplePRG.a) will automatically run an EEPROM tester
+
+	--erase --write CartBootSimplePRG.bin
 
 
 ## Errors
