@@ -59,9 +59,12 @@ The advanced configuration command line options must be used before the cartridg
 
 | Type			| Command line options					| Size (megabytes)	| Typical time to erase and write	|
 | ---			| ---									| ---				| ---								|
+|    			|    									|    				| Raspberry Pi 5					|
 | C64MegaCart	| None needed, use default config		| 2					| 62 seconds						|
 | Megabyter		| --cfwcl --cfwdci 4 --crdms 1 --cfwec	| 1					| 44 seconds						|
 | Gmod2			| --cfwec --cfct 1						| 0.5 + 2KB EEPROM	| 20 seconds						|
+|    			|    									|    				| Raspberry Pi Zero 2W				|
+| C64MegaCart	| None needed, use default config		| 2					| 99 seconds						|
 
 Default options are: --cfwch --cfwdci 0 --crdms 0 --cfwnec
 
