@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 		}
 
 		// Default to the first slot...
-		InterfaceControl::SetActiveSlot(0);
+		InterfaceControl::SetActiveSlot(theActiveSlot);
 		InterfaceControl::UpdateLatch();
 
 		// Enable power
@@ -262,7 +262,7 @@ int main(int argc, char** argv)
 							}
 						} while (statusRegister != theWriteValue);
 					}
-					InterfaceControl::SetActiveSlot(0);
+					InterfaceControl::SetActiveSlot(theActiveSlot);
 				}
 
 				if (gotError)
@@ -303,7 +303,7 @@ int main(int argc, char** argv)
 				WaitForStatusRegisterEqual(0xff);
 			}
 
-			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::SetActiveSlot(theActiveSlot);
 
 			InterfaceControl::ClearLED0();
 			InterfaceControl::UpdateLatch();
@@ -621,7 +621,7 @@ int main(int argc, char** argv)
 					progressiveDelay++;
 				}
 
-				InterfaceControl::SetActiveSlot(0);
+				InterfaceControl::SetActiveSlot(theActiveSlot);
 			}
 
 			printf("\n");
@@ -650,7 +650,7 @@ int main(int argc, char** argv)
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
 
-			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::SetActiveSlot(theActiveSlot);
 			InterfaceControl::UpdateLatch();
 
 			SerialEEPROM_Init();
@@ -714,7 +714,7 @@ int main(int argc, char** argv)
 
 			printf("Got bytes %d\n", numBytes);
 
-			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::SetActiveSlot(theActiveSlot);
 			InterfaceControl::UpdateLatch();
 
 			SerialEEPROM_Init();
@@ -753,7 +753,7 @@ int main(int argc, char** argv)
 
 			printf("\nWrite serial done\n");
 
-			InterfaceControl::SetActiveSlot(0);
+			InterfaceControl::SetActiveSlot(theActiveSlot);
 			InterfaceControl::UpdateLatch();
 
 			InterfaceControl::ClearLED1();
@@ -761,6 +761,16 @@ int main(int argc, char** argv)
 
 			continue;
 		}
+
+		if (strcasecmp(argv[argPos], "--activeslot") == 0 || strcasecmp(argv[argPos], "-as") == 0)
+		{
+			argPos++;
+			theActiveSlot = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+
+			continue;
+		}
+
 
 		printf("Unknown argument: %s\n", argv[argPos]);
 		argPos++;

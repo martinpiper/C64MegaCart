@@ -5,6 +5,7 @@
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
 
 int activeSlots = 1;
+int theActiveSlot = 0;
 
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 bool flashWriteCommandIsHiROM = true;

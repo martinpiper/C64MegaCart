@@ -1,6 +1,7 @@
 #pragma once
 
 extern int activeSlots;
+extern int theActiveSlot;
 
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 extern bool flashWriteCommandIsHiROM;

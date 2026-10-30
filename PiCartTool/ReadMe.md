@@ -16,6 +16,7 @@
 	--dump <address> <num bytes>			-d			Dumps the flash memory from address for the number of bytes
 	--dumpserial <address> <num bytes>		-ds			Dumps the serial EEPROM memory from address for the number of bytes
 	--slots <num>							-s			The nunber of slots being used, default is 1, from the front slot to the rear slot
+	--activeslot <index>					-as			The active slot (zero based) being used for single slot operations. Slot 0, the front most, is the default.
 
 
 
