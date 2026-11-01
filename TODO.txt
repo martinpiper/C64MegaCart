@@ -94,3 +94,19 @@ memory returns to Read mode and Bus Read operations from the address just progra
 
 
 * PiCartTool when reporting an error with flashing LEDs, there is no need to enable/disable power
+
+
+
+* Look at ATF16V8B-15SU
+	https://www.mouser.sg/en/ProductDetail/Microchip-Technology/ATF16V8B-15SU?qs=sGAEpiMZZMuPkEnZOVpBOPRTzuNlcbRoMSYq5dgdvtc%3D
+	Dev: https://www.microchip.com/en-us/development-tool/wincupl
+		"C:\WinCUPL\WinCUPL.exe"
+		"C:\work\ATF16V8B\test1.wcp"
+	Or: https://www.mouser.sg/en/c/semiconductors/programmable-logic-ics/?maximum%20operating%20frequency=10%20MHz%2C%2012.5%20MHz~~240%20MHz&operating%20supply%20voltage=1.71%20V%20to%205.5%20V%7C~1.8%20V%20to%205%20V~~2.25%20V%20to%205.25%20V%7C~3%20V%20to%205.5%20V%7C~3.3%20V%2C%205%20V~~5%20V%2C%2024%20V&instock=y&rp=semiconductors%2Fprogrammable-logic-ics%7C~Operating%20Supply%20Voltage%7C~Maximum%20Operating%20Frequency&sort=pricing
+	https://www.mouser.sg/en/ProductDetail/Microchip-Technology/ATF16V8B-15PU?qs=sGAEpiMZZMuPkEnZOVpBOPRTzuNlcbRo1zzqDS2V0qU%3D
+	ATF16V8B-15PU
+	Potential for in circuit programming?
+		https://docs.rs-online.com/ffb1/0900766b80027b8d.pdf
+		GAL chip programmer for Arduino: https://github.com/ole00/afterburner
+	Via the cart tool?
+	And C64?
