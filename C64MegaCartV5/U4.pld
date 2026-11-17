@@ -1,0 +1,25 @@
+Name       U4.pld;
+Partno     ATF16V8B ;
+Date       ;
+Revision   ;
+Designer   ;
+Company    ;
+Assembly   ;
+Location   U4 ;
+Device     G16V8;
+
+Pin 1  = PHI2;
+Pin 2  = R_W;
+Pin 3  = _IO1;
+Pin 4  = _IO2;
+Pin 5  = REQFLASH;
+Pin 6  = A15;
+
+Pin 19 = _GAME;
+Pin 18 = _LAT0;
+Pin 17 = _LAT1;
+
+
+!_GAME = PHI2 & REQFLASH & A15 & !R_W;
+!_LAT0 = PHI2 & !R_W & !_IO1;
+!_LAT1 = PHI2 & !R_W & !_IO2;

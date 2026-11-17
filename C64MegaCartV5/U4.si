@@ -1,0 +1,36 @@
+ORDER: PHI2, R_W, _IO1, _IO2, REQFLASH, A15, _GAME, _LAT0, _LAT1;
+VECTORS:
+/* Testing both IO */
+       0     0    1     1     0         0    H       H      H
+       0     1    0     0     0         0    H       H      H
+       1     1    0     0     0         0    H       H      H
+       1     0    1     1     0         0    H       H      H
+       1     0    0     0     0         0    H       L      L
+
+/* Testing _IO1 */
+       0     1    0     1     0         0    H       H      H
+       1     1    0     1     0         0    H       H      H
+       0     0    0     1     0         0    H       H      H
+       1     0    0     1     0         0    H       L      H
+
+/* Testing _IO2 */
+       0     1    1     0     0         0    H       H      H
+       1     1    1     0     0         0    H       H      H
+       0     0    1     0     0         0    H       H      H
+       1     0    1     0     0         0    H       H      L
+
+
+/* Testing _GAME behaviour */
+       0     1    1     1     0         0    H       H      H
+       1     1    1     1     0         0    H       H      H
+       0     0    1     1     0         0    H       H      H
+       1     0    1     1     0         0    H       H      H
+       0     0    1     1     1         0    H       H      H
+       1     0    1     1     1         0    H       H      H
+
+       0     1    1     1     0         1    H       H      H
+       1     1    1     1     0         1    H       H      H
+       0     0    1     1     0         1    H       H      H
+       1     0    1     1     0         1    H       H      H
+       0     0    1     1     1         1    H       H      H
+       1     0    1     1     1         1    L       H      H
