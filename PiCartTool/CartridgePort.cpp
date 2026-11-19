@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include <wiringPi.h>
 #include "Hardware.h"
 
@@ -323,4 +324,137 @@ void SetDataIO2(int address, int data)
 	C64Control::ClearIO2();
 	C64Control::UpdateLatch();
 	C64Control::ToggleDotClock();
+}
+
+// Writes with a rising PHI2 edge while the select line is active, the EasyFlash 3 CPLD needs this for register and flash writes
+// Busy waits at least the given time, delayMicroseconds() has a resolution of 1us and often waits longer
+static void DelayNanoseconds(long nanoseconds)
+{
+	struct timespec start, now;
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	do
+	{
+		clock_gettime(CLOCK_MONOTONIC, &now);
+	} while ((now.tv_sec - start.tv_sec) * 1000000000L + (now.tv_nsec - start.tv_nsec) < nanoseconds);
+}
+
+static void WriteWithPHI2Edge(int address, int data, void (*select)(void), void (*deselect)(void))
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+
+	// PHI2 goes low while no select line is active, otherwise the EasyFlash 3 drives the data bus.
+	// R/W and the data output change in the same latch update, nothing is selected yet.
+	C64Control::ClearPHI2();
+	C64Control::SetDataLatchOut();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+
+	// PHI2 and the select lines are in the same latch, so the rising edge and the select happen at the same time
+	C64Control::SetPHI2();
+	select();
+	C64Control::UpdateLatch();
+	// The CPLD writes about 280 to 480ns after the rising edge (wp to wp_end in exp_bus_ctrl.vhdl)
+	DelayNanoseconds(600);
+	deselect();
+	C64Control::UpdateLatch();
+	C64Control::SetRead();
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+}
+
+void SetDataIO1WithPHI2Edge(int address, int data)
+{
+	WriteWithPHI2Edge(address, data, C64Control::SetIO1, C64Control::ClearIO1);
+}
+
+void SetDataROMLWithPHI2Edge(int address, int data)
+{
+	WriteWithPHI2Edge(address, data, C64Control::SetLowROM, C64Control::ClearLowROM);
+}
+
+void SetDataROMHWithPHI2Edge(int address, int data)
+{
+	WriteWithPHI2Edge(address, data, C64Control::SetHighROM, C64Control::ClearHighROM);
+}
+
+int GetDataIO1(int address)
+{
+	DataLatchOut::SetAddress(address);
+	C64Control::SetIO1();
+	C64Control::UpdateLatch();
+	delayMicroseconds(1);
+	int value = GetInputByte();
+	C64Control::ClearIO1();
+	C64Control::UpdateLatch();
+
+	// The EasyFlash 3 keeps the register value on the data bus until the next PHI2 edge
+	C64Control::ClearPHI2();
+	C64Control::UpdateLatch();
+	C64Control::SetPHI2();
+	C64Control::UpdateLatch();
+
+	return value;
+}
+
+static int ReadWithDelay(int address, void (*select)(void), void (*deselect)(void))
+{
+	DataLatchOut::SetAddress(address);
+	select();
+	C64Control::UpdateLatch();
+	delayMicroseconds(1);
+	int value = GetInputByte();
+	deselect();
+	C64Control::UpdateLatch();
+
+	return value;
+}
+
+int GetDataROML(int address)
+{
+	return ReadWithDelay(address, C64Control::SetLowROM, C64Control::ClearLowROM);
+}
+
+int GetDataROMH(int address)
+{
+	return ReadWithDelay(address, C64Control::SetHighROM, C64Control::ClearHighROM);
+}
+
+void EF3FlashCommand(int command)
+{
+	// As in eapi-mx29640b.s the commands go to slot 0, bank 0, ROML $8aaa and $8555
+	SetDataIO1WithPHI2Edge(1, 0);
+	SetDataIO1WithPHI2Edge(0, 0);
+	SetDataROMLWithPHI2Edge(0xaaa, 0xaa);
+	SetDataROMLWithPHI2Edge(0x555, 0x55);
+	SetDataROMLWithPHI2Edge(0xaaa, command);
+}
+
+bool EF3SetSlotAndBank(int slot, int bank)
+{
+	SetDataIO1WithPHI2Edge(1, slot);
+	SetDataIO1WithPHI2Edge(0, bank);
+
+	// If the slot did not change, the next flash command would go to the system area in slot 0.
+	// One wrong read was seen once on the hardware, so the register is written and read once more before giving up.
+	if ((GetDataIO1(1) & 0x07) == slot)
+	{
+		return true;
+	}
+	SetDataIO1WithPHI2Edge(1, slot);
+	return (GetDataIO1(1) & 0x07) == slot;
+}
+
+bool EF3WaitForFlash(bool high, int address, int value, int timeoutMicroseconds)
+{
+	// While the flash is busy DQ7 is the complement of the final value, so the value only matches when it is done
+	for (int waited = 0; waited < timeoutMicroseconds; waited++)
+	{
+		int got = high ? GetDataROMH(address) : GetDataROML(address);
+		if (got == value)
+		{
+			return true;
+		}
+	}
+	return false;
 }

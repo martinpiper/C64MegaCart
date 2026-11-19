@@ -65,3 +65,16 @@ void SetDataIO1(int address, int data);
 
 void SetDataIO2(int data);
 void SetDataIO2(int address, int data);
+
+// The EasyFlash 3 CPLD only accepts register and flash writes shortly after a rising PHI2 edge
+void SetDataIO1WithPHI2Edge(int address, int data);
+void SetDataROMLWithPHI2Edge(int address, int data);
+void SetDataROMHWithPHI2Edge(int address, int data);
+int GetDataIO1(int address);
+int GetDataROML(int address);
+int GetDataROMH(int address);
+
+// Flash commands of the MX29LV640EB in the EasyFlash 3
+void EF3FlashCommand(int command);
+bool EF3SetSlotAndBank(int slot, int bank);
+bool EF3WaitForFlash(bool high, int address, int value, int timeoutMicroseconds);
