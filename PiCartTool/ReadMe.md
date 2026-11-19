@@ -11,6 +11,9 @@
 	--writeserial <filename>				-ws			Writes the file to the serial EEPROM memory
 	--writebyte <address> <byte>			-wb			Write a single byte to the address.
 	--read <num banks> <filename>			-r			Reads the whole cartridge for the number of banks and writes the data to the filename as a binary file. Only the first slot.
+	--detect								-			Names the cartridge type in each of the 5 programmer slots: EasyFlash 3, Megabyter, Gmod2, Magic Desk, empty or unknown. Nothing is erased or written.
+	--probe									-			Shows how the cartridge in each of the 5 programmer slots answers to the flash ID command in several variants, to find out how cartridge types can be detected. Nothing is erased or written.
+	--probeio1								-			Writes $de00 in several ways and shows whether a Magic Desk takes the value ($80 turns it off, $01 selects bank 1). Only for a Magic Desk alone in the programmer.
 	--ef3id									-			Reads the flash manufacturer and device ID of an EasyFlash 3 (MX29LV640EB: $c2 $cb). With --slots n for all programmer slots 1 to n.
 	--writeef3slot <slot> <filename>		-			Erases and writes slot 1 to 7 of an EasyFlash 3 and verifies it. The file is an EasyFlash .crt or a raw slot file of up to 1MB (each bank is 8KB ROML followed by 8KB ROMH). With --slots n all programmer slots 1 to n get the same data and each one is checked.
 	--ef3slotname <slot> <name>				-			Sets the name of slot 1 to 15 in the EasyFlash 3 menu directory (1 to 16 ASCII characters). Asks for confirmation before writing to slot 0. With --slots n all programmer slots 1 to n get the same data and each one is checked.

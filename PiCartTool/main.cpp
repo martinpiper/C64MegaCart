@@ -578,6 +578,431 @@ static bool EF3CheckOtherProgrammerSlots(void)
 	return true;
 }
 
+// --probe: shows how the cartridge in each programmer slot answers, to find out how cartridge types can be detected.
+// It only sends the autoselect command (flash ID) in several variants and resets the flash with $f0 after each one.
+// Nothing is erased or programmed.
+struct ProbeMethod
+{
+	const char* name;
+	bool phi2Edge;		// The write with a PHI2 edge of the EF3 code, otherwise SendChipCommand() with the settings below
+	bool high;			// ROMH instead of ROML
+	int dotClockIterations;
+	int registerDelay;
+	bool extraClocking;
+};
+
+static void ProbeSend(const ProbeMethod& method, int address, int data)
+{
+	if (method.phi2Edge)
+	{
+		if (method.high)
+		{
+			SetDataROMHWithPHI2Edge(address, data);
+		}
+		else
+		{
+			SetDataROMLWithPHI2Edge(address, data);
+		}
+		return;
+	}
+	flashWriteCommandIsHiROM = method.high;
+	flashWriteToggleDotClockIterations = method.dotClockIterations;
+	RegisterDelayMicroSeconds = method.registerDelay;
+	flashWriteCommandExtraClocking = method.extraClocking;
+	SendChipCommand(address, data);
+}
+
+static std::string ProbeReadBytes(int programmerSlot, int count)
+{
+	EF3SelectProgrammerSlot(programmerSlot);
+	std::string text;
+	char hex[8];
+	for (int high = 0; high < 2; high++)
+	{
+		text += high ? " ROMH" : "ROML";
+		for (int address = 0; address < count; address++)
+		{
+			snprintf(hex, sizeof(hex), " %02x", high ? GetDataROMH(address) : GetDataROML(address));
+			text += hex;
+		}
+	}
+	return text;
+}
+
+static void Probe(void)
+{
+	const int kMaxProgrammerSlots = 5;
+	// The settings of the existing write options for Megabyter and Gmod2 from ReadMe.md. The C64MegaCart default settings
+	// are left out: they select ROMH while R/W stays read, so any other cartridge drives the data bus at the same time.
+	const ProbeMethod methods[] = {
+		{ "PHI2 edge, ROML", true, false, 0, 0, false },
+		{ "PHI2 edge, ROMH", true, true, 0, 0, false },
+		{ "Megabyter settings", false, false, 4, 1, true },
+		{ "Gmod2 settings", false, true, 0, 0, true },
+	};
+	struct Addresses { const char* name; int first; int second; };
+	const Addresses addressSets[] = { { "$aaa/$555", 0xaaa, 0x555 }, { "$555/$2aa", 0x555, 0x2aa } };
+
+	// Keep the settings of the command line
+	bool savedHigh = flashWriteCommandIsHiROM;
+	int savedDotClock = flashWriteToggleDotClockIterations;
+	int savedDelay = RegisterDelayMicroSeconds;
+	bool savedExtra = flashWriteCommandExtraClocking;
+
+	printf("Probing programmer slots 1 to %d, only the flash ID is read, nothing is erased or written\n", kMaxProgrammerSlots);
+	std::string before[kMaxProgrammerSlots];
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		EF3SelectProgrammerSlot(programmerSlot);
+		int game = digitalRead(26);
+		int exrom = digitalRead(25);
+		before[programmerSlot] = ProbeReadBytes(programmerSlot, 16);
+		EF3SelectProgrammerSlot(programmerSlot);
+		int io1Bank = GetDataIO1(0);
+		int io1Slot = GetDataIO1(1);
+		printf("Programmer slot %d: _GAME=%d _EXROM=%d, $de00 reads $%02x, $de01 reads $%02x\n", programmerSlot + 1, game, exrom, io1Bank, io1Slot);
+		printf("  data      %s\n", before[programmerSlot].c_str());
+	}
+
+	for (const Addresses& addresses : addressSets)
+	{
+		for (const ProbeMethod& method : methods)
+		{
+			printf("Flash ID with %s, %s:\n", addresses.name, method.name);
+			for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+			{
+				// Autoselect again for every programmer slot: reading one slot can end it in all of them
+				// (on a Gmod2 the ROMH read after the first slot did)
+				ProbeSend(method, addresses.first, 0xaa);
+				ProbeSend(method, addresses.second, 0x55);
+				ProbeSend(method, addresses.first, 0x90);
+				printf("  slot %d   %s\n", programmerSlot + 1, ProbeReadBytes(programmerSlot, 4).c_str());
+				// Back to read mode with the same method, and with both select lines
+				ProbeSend(method, 0, 0xf0);
+				SetDataROMLWithPHI2Edge(0, 0xf0);
+				SetDataROMHWithPHI2Edge(0, 0xf0);
+			}
+		}
+	}
+
+	// The GMod2 only writes to its flash with $de00 bit 7 (write enable) and bit 6 set, the commands go over ROMH
+	// (gmod2.c of VICE). The register is written with all write methods and set back to 0 the same way afterwards:
+	// on a Megabyter $c0 selects another bank, and on a Magic Desk bit 7 turns the cartridge off until then.
+	auto setIO1 = [&](int value)
+	{
+		SetDataIO1WithPHI2Edge(0, value);
+		flashWriteToggleDotClockIterations = 0;
+		SetDataIO1(0, value);
+		flashWriteToggleDotClockIterations = 4;
+		SetDataIO1(0, value);
+	};
+	const ProbeMethod gmod2Methods[] = {
+		{ "Gmod2 settings", false, true, 0, 0, true },
+		{ "PHI2 edge, ROMH", true, true, 0, 0, false },
+	};
+	for (const ProbeMethod& method : gmod2Methods)
+	{
+		printf("Flash ID with $de00 = $c0, $555/$2aa, %s:\n", method.name);
+		for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+		{
+			setIO1(0xc0);
+			ProbeSend(method, 0x555, 0xaa);
+			ProbeSend(method, 0x2aa, 0x55);
+			ProbeSend(method, 0x555, 0x90);
+			printf("  slot %d   %s\n", programmerSlot + 1, ProbeReadBytes(programmerSlot, 4).c_str());
+			ProbeSend(method, 0, 0xf0);
+			SetDataROMLWithPHI2Edge(0, 0xf0);
+			SetDataROMHWithPHI2Edge(0, 0xf0);
+			setIO1(0x00);
+		}
+	}
+
+	flashWriteCommandIsHiROM = savedHigh;
+	flashWriteToggleDotClockIterations = savedDotClock;
+	RegisterDelayMicroSeconds = savedDelay;
+	flashWriteCommandExtraClocking = savedExtra;
+
+	// The cartridges must be back in read mode
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		std::string after = ProbeReadBytes(programmerSlot, 16);
+		printf("Programmer slot %d: data afterwards %s\n", programmerSlot + 1, after == before[programmerSlot] ? "the same as before" : ("DIFFERENT: " + after).c_str());
+	}
+	EF3SelectProgrammerSlot(theActiveSlot);
+}
+
+// --probeio1: tries several ways to write $de00 and shows whether a Magic Desk takes the value. $80 turns a Magic
+// Desk off (_EXROM=1), bank 1 shows other data, $00 turns it on again. Two of the ways keep IO1 active while PHI2 is
+// low, then an EasyFlash 3 drives the data bus too, so this is only for a Magic Desk alone in the programmer.
+static void ProbeIO1WriteC64Cycle(int address, int data, bool phi2FallsDuringIO1, bool withPHI2)
+{
+	DataLatchOut::SetAddress(address);
+	DataLatchOut::SetData(data);
+	C64Control::ClearPHI2();
+	C64Control::SetDataLatchOut();
+	C64Control::SetWrite();
+	C64Control::UpdateLatch();
+	if (withPHI2)
+	{
+		C64Control::SetPHI2();
+	}
+	C64Control::SetIO1();
+	C64Control::UpdateLatch();
+	delayMicroseconds(2);
+	if (phi2FallsDuringIO1)
+	{
+		// Like the C64: PHI2 falls first, IO1 and the data stay a little longer
+		C64Control::ClearPHI2();
+		C64Control::UpdateLatch();
+		delayMicroseconds(2);
+	}
+	C64Control::ClearIO1();
+	C64Control::UpdateLatch();
+	delayMicroseconds(2);
+	C64Control::SetRead();
+	C64Control::ClearDataLatchOut();
+	C64Control::UpdateLatch();
+}
+
+static void ProbeIO1(void)
+{
+	struct Method { const char* name; int kind; };
+	const Method methods[] = {
+		{ "SetDataIO1, dot clock 0", 0 },
+		{ "SetDataIO1, dot clock 4", 1 },
+		{ "PHI2 edge", 2 },
+		{ "PHI2 high, PHI2 falls during IO1", 3 },
+		{ "PHI2 low during IO1", 4 },
+	};
+	auto write = [](int kind, int value)
+	{
+		int savedDotClock = flashWriteToggleDotClockIterations;
+		switch (kind)
+		{
+		case 0: flashWriteToggleDotClockIterations = 0; SetDataIO1(0, value); break;
+		case 1: flashWriteToggleDotClockIterations = 4; SetDataIO1(0, value); break;
+		case 2: SetDataIO1WithPHI2Edge(0, value); break;
+		case 3: ProbeIO1WriteC64Cycle(0, value, true, true); break;
+		case 4: ProbeIO1WriteC64Cycle(0, value, false, false); break;
+		}
+		flashWriteToggleDotClockIterations = savedDotClock;
+	};
+	auto state = [](void)
+	{
+		EF3SelectProgrammerSlot(theActiveSlot);
+		char text[64];
+		snprintf(text, sizeof(text), "_EXROM=%d ROML %02x %02x %02x %02x", digitalRead(25), GetDataROML(0), GetDataROML(1), GetDataROML(2), GetDataROML(3));
+		return std::string(text);
+	};
+
+	printf("Writing $de00 in programmer slot %d, only for a Magic Desk alone in the programmer\n", theActiveSlot + 1);
+	printf("Before:  %s\n", state().c_str());
+	for (const Method& method : methods)
+	{
+		printf("%s:\n", method.name);
+		write(method.kind, 0x80);
+		printf("  $80 -> %s\n", state().c_str());
+		write(method.kind, 0x00);
+		printf("  $00 -> %s\n", state().c_str());
+		write(method.kind, 0x01);
+		printf("  $01 -> %s\n", state().c_str());
+		write(method.kind, 0x00);
+		printf("  $00 -> %s\n", state().c_str());
+	}
+}
+
+// --detect: names the cartridge type in each programmer slot, with the rules found with --probe.
+// Every write goes to all programmer slots, so each test is sent again for every slot and undone afterwards.
+struct DetectID
+{
+	const char* type;
+	const char* chip;
+	ProbeMethod method;
+	int first;
+	int second;
+	int manufacturer;
+	int deviceOffset;
+	int device;
+};
+
+static const int kDetectBytes = 64;
+
+static void DetectReadROML(int programmerSlot, int count, unsigned char* data)
+{
+	EF3SelectProgrammerSlot(programmerSlot);
+	for (int address = 0; address < count; address++)
+	{
+		data[address] = (unsigned char) GetDataROML(address);
+	}
+}
+
+// Writes $de00 with all write methods of --probe. SetDataIO1() takes the data off the bus before IO1 ends, so a
+// Magic Desk, which takes the value at the end of IO1, gets an open bus ($ff: turned off). The write with a PHI2 edge
+// keeps the data until IO1 ends and comes last.
+static void DetectSetIO1(int value)
+{
+	int savedDotClock = flashWriteToggleDotClockIterations;
+	flashWriteToggleDotClockIterations = 0;
+	SetDataIO1(0, value);
+	flashWriteToggleDotClockIterations = 4;
+	SetDataIO1(0, value);
+	flashWriteToggleDotClockIterations = savedDotClock;
+	SetDataIO1WithPHI2Edge(0, value);
+}
+
+static void Detect(void)
+{
+	const int kMaxProgrammerSlots = 5;
+	const DetectID ids[] = {
+		{ "EasyFlash 3", "MX29LV640EB", { "PHI2 edge, ROML", true, false, 0, 0, false }, 0xaaa, 0x555, 0xc2, 2, 0xcb },
+		{ "C64MegaCart (top)", "M29F160FT",{ "C64MegaCart settings", false, true, 0, 0, true }, 0xaaa, 0x555, 0x01, 2, 0xd2 },
+		{ "C64MegaCart (bottom)", "M29F160FB",{ "C64MegaCart settings", false, true, 0, 0, true }, 0xaaa, 0x555, 0x01, 2, 0xd8 },
+		{ "Megabyter", "MX29F800", { "Megabyter settings", false, false, 4, 1, true }, 0xaaa, 0x555, 0xc2, 2, 0x58 },
+		{ "Gmod2", "Am29F040", { "Gmod2 settings", false, true, 0, 0, true }, 0x555, 0x2aa, 0x01, 1, 0xa4 },
+	};
+
+	bool savedHigh = flashWriteCommandIsHiROM;
+	int savedDotClock = flashWriteToggleDotClockIterations;
+	int savedDelay = RegisterDelayMicroSeconds;
+	bool savedExtra = flashWriteCommandExtraClocking;
+
+	printf("Detecting the cartridges in programmer slots 1 to %d, nothing is erased or written\n", kMaxProgrammerSlots);
+	// Bank 0 like after a reset: the IO clear at the start leaves a Magic Desk turned off and a Megabyter in another bank
+	DetectSetIO1(0);
+	unsigned char before[kMaxProgrammerSlots][2][kDetectBytes];
+	int game[kMaxProgrammerSlots], exrom[kMaxProgrammerSlots], io1[kMaxProgrammerSlots];
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		EF3SelectProgrammerSlot(programmerSlot);
+		game[programmerSlot] = digitalRead(26);
+		exrom[programmerSlot] = digitalRead(25);
+		for (int address = 0; address < kDetectBytes; address++)
+		{
+			before[programmerSlot][0][address] = (unsigned char) GetDataROML(address);
+			before[programmerSlot][1][address] = (unsigned char) GetDataROMH(address);
+		}
+		EF3SelectProgrammerSlot(programmerSlot);
+		io1[programmerSlot] = GetDataIO1(0);
+	}
+
+	const DetectID* found[kMaxProgrammerSlots] = {};
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		for (const DetectID& id : ids)
+		{
+			ProbeSend(id.method, id.first, 0xaa);
+			ProbeSend(id.method, id.second, 0x55);
+			ProbeSend(id.method, id.first, 0x90);
+			unsigned char data[4];
+			DetectReadROML(programmerSlot, 4, data);
+			ProbeSend(id.method, 0, 0xf0);
+			SetDataROMLWithPHI2Edge(0, 0xf0);
+			SetDataROMHWithPHI2Edge(0, 0xf0);
+			// The ID must not be the normal data at these addresses
+			const unsigned char* normal = before[programmerSlot][0];
+			if (data[0] == id.manufacturer && data[id.deviceOffset] == id.device && (normal[0] != data[0] || normal[id.deviceOffset] != data[id.deviceOffset]))
+			{
+				found[programmerSlot] = &id;
+				break;
+			}
+		}
+	}
+
+	flashWriteCommandIsHiROM = savedHigh;
+	flashWriteToggleDotClockIterations = savedDotClock;
+	RegisterDelayMicroSeconds = savedDelay;
+	flashWriteCommandExtraClocking = savedExtra;
+
+	// A Magic Desk has no flash ID: bank 1 in $de00 must show other data than bank 0. Bit 7 stays clear, it turns a
+	// Magic Desk off.
+	bool bankChanges[kMaxProgrammerSlots] = {};
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		if (found[programmerSlot] || game[programmerSlot] != 1 || exrom[programmerSlot] != 0)
+		{
+			continue;
+		}
+		DetectSetIO1(1);
+		unsigned char data[kDetectBytes];
+		DetectReadROML(programmerSlot, kDetectBytes, data);
+		DetectSetIO1(0);
+		bankChanges[programmerSlot] = memcmp(data, before[programmerSlot][0], kDetectBytes) != 0;
+	}
+
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		bool allEmpty = true;
+		for (int i = 0; i < kDetectBytes; i++)
+		{
+			allEmpty = allEmpty && before[programmerSlot][0][i] == 0xff && before[programmerSlot][1][i] == 0xff;
+		}
+		printf("Programmer slot %d: ", programmerSlot + 1);
+		if (found[programmerSlot])
+		{
+			printf("%s (flash ID $%02x $%02x, %s)\n", found[programmerSlot]->type, found[programmerSlot]->manufacturer, found[programmerSlot]->device, found[programmerSlot]->chip);
+		}
+		else if (bankChanges[programmerSlot])
+		{
+			printf("Magic Desk (no flash ID, the data changes with the bank in $de00)\n");
+		}
+		else if (!allEmpty && game[programmerSlot] == 1 && exrom[programmerSlot] == 0)
+		{
+			// A Magic Desk whose bank register does not take the writes of the programmer looks the same
+			printf("8KB ROM cartridge without flash ID, for example a Magic Desk (the bank in $de00 does not change the data)\n");
+		}
+		else if (allEmpty && io1[programmerSlot] == 0xff && game[programmerSlot] == 1 && exrom[programmerSlot] == 1)
+		{
+			printf("empty\n");
+		}
+		else if (allEmpty && io1[programmerSlot] == 0xff)
+		{
+			printf("empty or no data (_GAME=%d _EXROM=%d)\n", game[programmerSlot], exrom[programmerSlot]);
+		}
+		else
+		{
+			printf("unknown (_GAME=%d _EXROM=%d, $de00 reads $%02x, ROML %02x %02x %02x %02x), --probe shows more\n", game[programmerSlot], exrom[programmerSlot], io1[programmerSlot], before[programmerSlot][0][0], before[programmerSlot][0][1], before[programmerSlot][0][2], before[programmerSlot][0][3]);
+		}
+	}
+
+	// The cartridges must be back in read mode and in bank 0
+	for (int programmerSlot = 0; programmerSlot < kMaxProgrammerSlots; programmerSlot++)
+	{
+		EF3SelectProgrammerSlot(programmerSlot);
+		unsigned char after[2][kDetectBytes];
+		for (int address = 0; address < kDetectBytes; address++)
+		{
+			after[0][address] = (unsigned char) GetDataROML(address);
+			after[1][address] = (unsigned char) GetDataROMH(address);
+		}
+		if (memcmp(after, before[programmerSlot], sizeof(after)) != 0)
+		{
+			printf("WARNING: programmer slot %d reads other data than before the detection\n", programmerSlot + 1);
+			for (int high = 0; high < 2; high++)
+			{
+				for (int line = 0; line < kDetectBytes; line += 16)
+				{
+					if (memcmp(after[high] + line, before[programmerSlot][high] + line, 16) == 0)
+					{
+						continue;
+					}
+					printf("  %s $%02x before", high ? "ROMH" : "ROML", line);
+					for (int i = 0; i < 16; i++)
+					{
+						printf(" %02x", before[programmerSlot][high][line + i]);
+					}
+					printf("\n  %s $%02x after ", high ? "ROMH" : "ROML", line);
+					for (int i = 0; i < 16; i++)
+					{
+						printf(" %02x", after[high][line + i]);
+					}
+					printf("\n");
+				}
+			}
+		}
+	}
+	EF3SelectProgrammerSlot(theActiveSlot);
+}
+
 // Reads the flash ID in every programmer slot before writing. Without an MX29LV640EB in all of them nothing is written.
 static bool EF3CheckChips(void)
 {
@@ -2139,6 +2564,27 @@ int main(int argc, char** argv)
 			}
 			EF3Erase("sets all names in the menu back. The slots, KERNALs and freezers keep their content, so the menu starts them as before", std::vector<EF3Sector>(), nameIndices, "yes");
 
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--probeio1") == 0)
+		{
+			argPos++;
+			ProbeIO1();
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--detect") == 0)
+		{
+			argPos++;
+			Detect();
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--probe") == 0)
+		{
+			argPos++;
+			Probe();
 			continue;
 		}
 
