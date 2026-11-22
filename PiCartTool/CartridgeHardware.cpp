@@ -14,6 +14,22 @@ bool flashWriteCommandExtraClocking = false;
 
 FlashChipType flashChipType = M29F160;
 
+bool flashCommandsReversed = false;
+int readDelayMicroSeconds = 0;
+
+int ReverseBits(int value)
+{
+	int reversed = 0;
+	for (int bit = 0; bit < 8; bit++)
+	{
+		if (value & (1 << bit))
+		{
+			reversed |= 0x80 >> bit;
+		}
+	}
+	return reversed;
+}
+
 void ResetCartridge(void)
 {
 	// Reset the cartridge before any operations
@@ -44,6 +60,10 @@ void ClearCartridgeIO(void)
 
 void SendChipCommand(int address, int data)
 {
+	if (flashCommandsReversed)
+	{
+		data = ReverseBits(data);
+	}
 	DataLatchOut::SetAddress(address);
 	DataLatchOut::SetData(data);
 

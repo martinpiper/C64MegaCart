@@ -13,6 +13,13 @@ enum FlashChipType
 
 extern FlashChipType flashChipType;
 
+// The DIY Gmod2 of Daniel Mantione has a board revision with the data bus of the flash reversed (D0 to DQ7, D7 to DQ0):
+// the flash commands are sent reversed. The data needs nothing, it reads back as it was written.
+extern bool flashCommandsReversed;
+// Microseconds before each read of --read and of the data polling of --write; the DIY Gmod2 needs about 1 us for D0
+extern int readDelayMicroSeconds;
+int ReverseBits(int value);
+
 void ResetCartridge(void);
 void ClearCartridgeIO(void);
 
