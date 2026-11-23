@@ -1068,7 +1068,7 @@ bool Ide64Read(const char* filename)
 // is checked right after writing, and the whole image at the end. With prepare, the image is made after the IDE64 can
 // be read (--swapide64), it returns false when nothing is to be written. With upperFirst the second half of the image
 // is written before the first.
-bool Ide64WriteImage(std::vector<unsigned char> file, const char* filename, bool waitForJumper,	const std::function<bool(int, std::vector<unsigned char>&)>& prepare, bool upperFirst)
+bool Ide64WriteImage(std::vector<unsigned char> file, const char* filename, bool waitForJumper, const std::function<bool(int, std::vector<unsigned char>&)>& prepare, bool upperFirst)
 {
 	if (!Ide64CheckOtherSlots())
 	{

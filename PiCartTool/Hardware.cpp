@@ -1,13 +1,18 @@
 #include <wiringPi.h>
 #include <atomic>
+#include <time.h>
 #include "Hardware.h"
+
+// The data bus needs about 100ns after the latch update that selects the cartridge (five slot programmer, Pi Zero 2W).
+// Read at once, D0 (read first) still showed the level before in about a fifth of the bytes.
+static const long kDataBusSettleNanoseconds = 200;
 
 static volatile std::atomic<int> sCachedSignals[28];
 
 void HardwareInit()
 {
 	wiringPiSetupGpio();
-	// The GPIO outputs keep the levels of the last run, so SetOutputByte() must write every pin once
+	// Unknown: the GPIO outputs keep the levels of the last run, so SetOutputByte() must write every pin once
 	for (int i = 0; i < 28; i++)
 	{
 		sCachedSignals[i] = -1;
@@ -36,6 +41,13 @@ void HardwareInit()
 
 int GetInputByte(void)
 {
+	timespec start, now;
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	do
+	{
+		clock_gettime(CLOCK_MONOTONIC, &now);
+	} while ((now.tv_sec - start.tv_sec) * 1000000000L + now.tv_nsec - start.tv_nsec < kDataBusSettleNanoseconds);
+
 	int ret = 0;
 	for (int i = 0; i < 8; i++)
 	{

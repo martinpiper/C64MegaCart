@@ -1141,6 +1141,12 @@ int main(int argc, char** argv)
 			flashCommandsReversed = true;
 			continue;
 		}
+		if (strcasecmp(argv[argPos], "--cfub") == 0)
+		{
+			argPos++;
+			flashUnlockBypass = true;
+			continue;
+		}
 		if (strcasecmp(argv[argPos], "--cfrdd") == 0)
 		{
 			argPos++;
@@ -1269,6 +1275,10 @@ int main(int argc, char** argv)
 
 			bool gotError = false;
 			int bank = 0;
+			if (flashUnlockBypass)
+			{
+				SendChipCommandUnlockBypass();
+			}
 			while (!feof(fp))
 			{
 				size_t numBytes = fread(bankData, sizeof(bankData[0]), sizeof(bankData), fp);
@@ -1306,7 +1316,15 @@ int main(int argc, char** argv)
 					}
 
 					// Program commands
-					SendChipCommandProgram();
+					if (flashUnlockBypass)
+					{
+						// At the address of the byte, so the address latches need no update for it
+						SendChipCommand(address, 0xa0);
+					}
+					else
+					{
+						SendChipCommandProgram();
+					}
 
 					// Program command4 (the actual byte)
 					DataLatchOut::SetAddress(address);
@@ -1315,42 +1333,52 @@ int main(int argc, char** argv)
 
 					PerformCartridgeWriteCycle();
 
-					for (int slot = 0; slot < activeSlots; slot++)
+					// Data polling of all slots in passes: one pass sets ROML low once and reads every slot that is not done
+					// yet. With ROML low every slot drives its data, so the next slot only needs the latch update of the slot
+					// select (the data bus follows it in less than 100ns, the wait in GetInputByte() covers it).
+					int slotsNotDone = (1 << activeSlots) - 1;
+					int iterations = 0;
+					while (slotsNotDone != 0)
 					{
-						InterfaceControl::SetActiveSlot(slot);
-
-						int statusRegister = 0;
-						int iterations = 0;
-						do
+						C64Control::SetLowROM();
+						C64Control::UpdateLatch();
+						//				delay(0);	// Certainly more than the 20ns for a bus read
+						if (iterations > 50)
 						{
-							if (gotError)
+							delayMicroseconds(1);
+						}
+						for (int slot = 0; slot < activeSlots; slot++)
+						{
+							if ((slotsNotDone & (1 << slot)) == 0)
 							{
-								break;
+								continue;
 							}
-
-							C64Control::SetLowROM();
-							C64Control::UpdateLatch();
-							//				delay(0);	// Certainly more than the 20ns for a bus read
-							if (iterations > 50)
-							{
-								delayMicroseconds(1);
-							}
+							InterfaceControl::SetActiveSlot(slot);
 							// Without it the data polling of the DIY Gmod2 can read DQ7 (on D0) as done too early
 							if (readDelayMicroSeconds > 0)
 							{
 								delayMicroseconds(readDelayMicroSeconds);
 							}
-							statusRegister = GetInputByte();
-							C64Control::ClearLowROM();
-							C64Control::UpdateLatch();
-							if (iterations++ > 100)
+							if (GetInputByte() == theWriteValue)
 							{
-								printf("There seems to be a problem verifying the byte at address $%04x slot %d\n", address, slot+1);
-								ReportCartridgeError();
-								gotError = true;
-								break;
+								slotsNotDone &= ~(1 << slot);
 							}
-						} while (statusRegister != theWriteValue);
+						}
+						C64Control::ClearLowROM();
+						C64Control::UpdateLatch();
+						if (slotsNotDone != 0 && iterations++ > 100)
+						{
+							for (int slot = 0; slot < activeSlots; slot++)
+							{
+								if ((slotsNotDone & (1 << slot)) != 0)
+								{
+									printf("There seems to be a problem verifying the byte at address $%04x slot %d\n", address, slot+1);
+								}
+							}
+							ReportCartridgeError();
+							gotError = true;
+							break;
+						}
 					}
 					InterfaceControl::SetActiveSlot(theActiveSlot);
 				}
@@ -1362,6 +1390,10 @@ int main(int argc, char** argv)
 
 				printf("\nBank done\n");
 				bank++;
+			}
+			if (flashUnlockBypass)
+			{
+				SendChipCommandUnlockBypassReset();
 			}
 
 			InterfaceControl::ClearLED1();

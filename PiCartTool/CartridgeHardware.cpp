@@ -15,6 +15,7 @@ bool flashWriteCommandExtraClocking = false;
 FlashChipType flashChipType = M29F160;
 
 bool flashCommandsReversed = false;
+bool flashUnlockBypass = false;
 int readDelayMicroSeconds = 0;
 
 int ReverseBits(int value)
@@ -174,6 +175,30 @@ void SendChipCommandProgram(void)
 	}
 }
 
+void SendChipCommandUnlockBypass(void)
+{
+	switch (flashChipType)
+	{
+	case M29F160:
+		SendChipCommand(0xaaa, 0xaa);
+		SendChipCommand(0x555, 0x55);
+		SendChipCommand(0xaaa, 0x20);
+		break;
+	case M29F040:
+		SendChipCommand(0x555, 0xaa);
+		SendChipCommand(0x2aa, 0x55);
+		SendChipCommand(0x555, 0x20);
+		break;
+	}
+}
+
+// Back to read mode, the addresses do not matter
+void SendChipCommandUnlockBypassReset(void)
+{
+	SendChipCommand(0, 0x90);
+	SendChipCommand(0, 0x00);
+}
+
 void PerformCartridgeWriteCycle(void)
 {
 	if (flashWriteCommandExtraClocking)
@@ -320,7 +345,8 @@ bool SerialEEPROM_WaitForReady(void)
 	C64Control::SetRead();
 	C64Control::SetIO1();
 	C64Control::UpdateLatch();
-	while (iterations < 5000)
+	// Polls every 50us for up to 5s: the write of a word takes about 4ms, a poll every 1ms lost about 1ms per word
+	while (iterations < 100000)
 	{
 		int byte = GetInputByte();
 		//		printf("%02x ", byte);
@@ -330,7 +356,7 @@ bool SerialEEPROM_WaitForReady(void)
 			//			printf("EEPROM ready %d\n", iterations);
 			return true;
 		}
-		delay(1);
+		delayMicroseconds(50);
 		C64Control::ToggleDotClock();
 		iterations++;
 	}

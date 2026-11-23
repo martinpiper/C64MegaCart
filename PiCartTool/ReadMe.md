@@ -121,6 +121,7 @@ These options alter the timings and other signals expected by different cartridg
 	--cfwnec			No extra clocking for signal generation. This option if faster but some cartridges are unable tolerate the non-standard timings.
 	--cfct <number>		0 = M29F160, 1 = M29F040
 	--cfrev				The flash commands are sent with the bits reversed (D0 to D7 ... D7 to D0), for the DIY Gmod2 of Daniel Mantione with the reversed data bus (flasher-c64-rev.prg). The data is written as it is.
+	--cfub				--write uses the unlock bypass of the flash: the unlock cycles once, then every byte needs only the A0 command and the byte. Only for flash chips that have it (AMD and compatible, the MX29F800 of the Megabyter has it).
 	--cfrdd <number>	Delay in microseconds before each read of --read, --dump and the data polling of --write. The DIY Gmod2 needs 1 us or more: without it D0 often reads 1.
 
 

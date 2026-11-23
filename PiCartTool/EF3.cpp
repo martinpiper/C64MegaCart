@@ -16,7 +16,6 @@
 #include <vector>
 #include "EF3.h"
 
-
 const unsigned char* EF3Chip(const unsigned char* image, int slot, int bank, bool high)
 {
 	return image + slot * kEF3SlotSize + (bank * 2 + (high ? 1 : 0)) * kEF3BankSize;
@@ -588,8 +587,6 @@ bool EF3CheckOtherProgrammerSlots(void)
 	return true;
 }
 
-
-
 // Reads the flash ID in every programmer slot before writing. Without an MX29LV640EB in all of them nothing is written.
 bool EF3CheckChips(void)
 {
@@ -891,7 +888,7 @@ bool EF3ProgramInCurrentBank(bool high, const unsigned char* data)
 // The sector is read first in every programmer slot: if it holds the data in all of them it is skipped, if it is empty
 // in all of them it is not erased. The bank switch is proven before erasing, in slot 0 also before writing.
 // The slot register is read back after each switch. changed tells if the flash was touched, also when an error happened.
-bool EF3WriteSector(int slot, int firstBank, int numBanks, bool high, const std::function<const unsigned char*(int)>& target, bool& changed, bool& skipped)
+bool EF3WriteSector(int slot, int firstBank, int numBanks, bool high, const std::function<const unsigned char* (int)>& target, bool& changed, bool& skipped)
 {
 	static unsigned char current[kEF3BankSize];
 	int maxDelayNeeded = 0;
