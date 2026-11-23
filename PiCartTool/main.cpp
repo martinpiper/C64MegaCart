@@ -1154,6 +1154,23 @@ int main(int argc, char** argv)
 			argPos++;
 			continue;
 		}
+		if (strcasecmp(argv[argPos], "--gpiofast") == 0)
+		{
+			argPos++;
+			gpioFast = true;
+			continue;
+		}
+		// Before the power relay is switched on: the cartridges stay off
+		if (strcasecmp(argv[argPos], "--gpiotest") == 0)
+		{
+			argPos++;
+			int iterations = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+			HardwareInit();
+			InitCartTool();
+			GpioTest(iterations);
+			continue;
+		}
 		if (strcasecmp(argv[argPos], "--cfct") == 0)
 		{
 			argPos++;

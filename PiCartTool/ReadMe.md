@@ -123,6 +123,8 @@ These options alter the timings and other signals expected by different cartridg
 	--cfrev				The flash commands are sent with the bits reversed (D0 to D7 ... D7 to D0), for the DIY Gmod2 of Daniel Mantione with the reversed data bus (flasher-c64-rev.prg). The data is written as it is.
 	--cfub				--write uses the unlock bypass of the flash: the unlock cycles once, then every byte needs only the A0 command and the byte. Only for flash chips that have it (AMD and compatible, the MX29F800 of the Megabyter has it).
 	--cfrdd <number>	Delay in microseconds before each read of --read, --dump and the data polling of --write. The DIY Gmod2 needs 1 us or more: without it D0 often reads 1.
+	--gpiofast			Reads the data pins D0-D7 (GPIO 0-7) with one access of the GPIO level register and writes the output byte (GPIO 8-15) with one access of the set and one of the clear register, instead of 8 calls of digitalRead() or digitalWrite(). Works on the BCM2835 to BCM2711 (Pi 1 to 4, Zero 2W) and the RP1 (Pi 5). The wait of 200 ns for the data bus before each read uses the counter of the ARM generic timer instead of clock_gettime() (about 365 ns instead of 490 ns on the Zero 2W), not on the ARMv6 of the Pi 1 and Zero. The latch pulses stay as they are. For all cartridge types.
+	--gpiotest <number>	Measures the GPIO accesses the given number of times, with and without --gpiofast, and checks that both ways give the same levels on the output pins, also the wait for the data bus with the ARM timer. The cartridges stay switched off, only the output byte changes and no latch takes it.
 
 
 ## Setup software using gcc
