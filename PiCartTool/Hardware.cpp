@@ -7,9 +7,10 @@ static volatile std::atomic<int> sCachedSignals[28];
 void HardwareInit()
 {
 	wiringPiSetupGpio();
+	// The GPIO outputs keep the levels of the last run, so SetOutputByte() must write every pin once
 	for (int i = 0; i < 28; i++)
 	{
-		sCachedSignals[i] = 0;
+		sCachedSignals[i] = -1;
 	}
 
 	for (int i = 0; i < 8; i++)
