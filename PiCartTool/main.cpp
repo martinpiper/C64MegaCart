@@ -12,10 +12,19 @@
 #include "CartridgeHardware.h"
 #include "ProgrammerHardware.h"
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <dirent.h>
+#include <unistd.h>
 #include <functional>
 #include <vector>
 #include "EF3.h"
 #include "IDE64.h"
+#include "EasyFlash1.h"
+#include "EFRam.h"
+
+// The data polling of --write gives up 5 ms after its first 100 passes. Programming a byte takes some us, the data sheets
+// of these flash chips give at most some 100 us.
+static const long long kPollTimeoutMicroseconds = 5000;
 
 // --probe: shows how the cartridge in each programmer slot answers, to find out how cartridge types can be detected.
 // It only sends the autoselect command (flash ID) in several variants and resets the flash with $f0 after each one.
@@ -345,6 +354,99 @@ static int DetectReadIO2(int address)
 	return value;
 }
 
+// A cartridge that needs a PHI2 clock may be a TeensyROM, which is updated over USB from the Pi. For that the Pi needs
+// the udev rule of PJRC (https://www.pjrc.com/teensy/00-teensy.rules): without it ModemManager and the echo of
+// /dev/ttyACM0 send the output of the TeensyROM back to it as commands, a single "e" resets its settings. And it needs
+// teensy_loader_cli, 2.3 or newer (2.2 stops on a Teensy 4.1 with "error writing to Teensy", the erase takes longer
+// than its timeout).
+static bool FileHasBoth(const char* path, const char* a, const char* b)
+{
+	FILE* fp = fopen(path, "r");
+	if (!fp)
+	{
+		return false;
+	}
+	char line[1024];
+	bool found = false;
+	while (!found && fgets(line, sizeof(line), fp))
+	{
+		found = strstr(line, a) && strstr(line, b);
+	}
+	fclose(fp);
+	return found;
+}
+
+static bool TeensyUdevRuleInstalled(void)
+{
+	const char* folders[] = { "/etc/udev/rules.d", "/lib/udev/rules.d", "/usr/lib/udev/rules.d" };
+	for (const char* folder : folders)
+	{
+		DIR* dir = opendir(folder);
+		if (!dir)
+		{
+			continue;
+		}
+		bool found = false;
+		struct dirent* entry;
+		while (!found && (entry = readdir(dir)) != NULL)
+		{
+			std::string name = entry->d_name;
+			if (name.size() > 6 && name.compare(name.size() - 6, 6, ".rules") == 0)
+			{
+				found = FileHasBoth((std::string(folder) + "/" + name).c_str(), "16c0", "ID_MM_DEVICE_IGNORE");
+			}
+		}
+		closedir(dir);
+		if (found)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool ProgramInPath(const char* program)
+{
+	const char* path = getenv("PATH");
+	std::string folders = path ? path : "/usr/local/bin:/usr/bin:/bin";
+	folders += ":/usr/local/bin:/usr/bin";
+	size_t start = 0;
+	while (start <= folders.size())
+	{
+		size_t end = folders.find(':', start);
+		if (end == std::string::npos)
+		{
+			end = folders.size();
+		}
+		std::string file = folders.substr(start, end - start) + "/" + program;
+		if (end > start && access(file.c_str(), X_OK) == 0)
+		{
+			return true;
+		}
+		start = end + 1;
+	}
+	return false;
+}
+
+static void DetectTeensyNotes(void)
+{
+	bool rule = TeensyUdevRuleInstalled();
+	bool loader = ProgramInPath("teensy_loader_cli");
+	printf("For a TeensyROM over USB (--run): udev rule of PJRC %s, teensy_loader_cli %s\n", rule ? "installed" : "missing",
+		loader ? "installed" : "missing");
+	// Seen on piper1: a Megabyter next to a TeensyROM read no flash ID and other data on every read
+	printf("  A TeensyROM disturbs the other programmer slots (no flash ID, wrong data): with one in, the other slots are not detected right. Use it alone\n");
+	if (!rule)
+	{
+		printf("  Install https://www.pjrc.com/teensy/00-teensy.rules as /etc/udev/rules.d/00-teensy.rules, then udevadm control --reload-rules. Without it\n");
+		printf("  ModemManager and the echo of /dev/ttyACM0 send the output of the TeensyROM back to it as commands (\"e\" resets its settings)\n");
+	}
+	if (!loader)
+	{
+		printf("  Install teensy_loader_cli 2.3 or newer (https://github.com/PaulStoffregen/teensy_loader_cli), 2.2 fails on the Teensy 4.1\n");
+	}
+}
+
 static void Detect(void)
 {
 	const int kMaxProgrammerSlots = kDetectMaxProgrammerSlots;
@@ -358,6 +460,8 @@ static void Detect(void)
 
 	bool savedHigh = flashWriteCommandIsHiROM;
 	int savedDotClock = flashWriteToggleDotClockIterations;
+	// A slot that pulls _GAME or _EXROM but drives no data: maybe a TeensyROM, see DetectTeensyNotes()
+	bool needsPHI2 = false;
 	int savedDelay = RegisterDelayMicroSeconds;
 	bool savedExtra = flashWriteCommandExtraClocking;
 	bool savedReversed = flashCommandsReversed;
@@ -1041,6 +1145,7 @@ static void Detect(void)
 			// 1 MHz to answer, the programmer has none: it may pull _GAME/_EXROM, but drives no data
 			printf("empty or no data (_GAME=%d _EXROM=%d)%s\n", g, e,
 				g == 0 || e == 0 ? ": pulls _GAME or _EXROM, but drives no data, maybe a cartridge that needs a PHI2 clock (Kung Fu Flash, TeensyROM, GMod4)" : "");
+			needsPHI2 = needsPHI2 || g == 0 || e == 0;
 		}
 		else
 		{
@@ -1081,6 +1186,79 @@ static void Detect(void)
 		}
 	}
 	SelectProgrammerSlotForLines(theActiveSlot);
+	if (needsPHI2)
+	{
+		DetectTeensyNotes();
+	}
+}
+
+// The version: the build script gives it, for example "C64MegaCart 0c751e7 + patches 0001-0012 (cartridge 5f0272d)",
+// with git describe: -DPICARTTOOL_VERSION="\"$(git describe --always --dirty)\"". Without it only the build time says
+// which program it is.
+#ifndef PICARTTOOL_VERSION
+#define PICARTTOOL_VERSION "(no version given at the build)"
+#endif
+
+static void PrintVersion(void)
+{
+	printf("PiCartTool %s, built %s %s\n", PICARTTOOL_VERSION, __DATE__, __TIME__);
+}
+
+// --help: the lists of the options from ReadMe.md next to the program (sections "Command line arguments" and
+// "Advanced configuration options"), so the help and the ReadMe can not differ
+static void PrintHelp(const char* program)
+{
+	PrintVersion();
+	printf("\n");
+	std::string path;
+	char exe[4096];
+	ssize_t length = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+	if (length > 0)
+	{
+		exe[length] = 0;
+		path = exe;
+	}
+	else
+	{
+		path = program;
+	}
+	size_t slash = path.find_last_of('/');
+	path = (slash == std::string::npos ? std::string(".") : path.substr(0, slash)) + "/ReadMe.md";
+	FILE* readMe = fopen(path.c_str(), "r");
+#ifdef PICARTTOOL_README
+	// A build somewhere else (the simulator) can give the path
+	if (!readMe)
+	{
+		path = PICARTTOOL_README;
+		readMe = fopen(path.c_str(), "r");
+	}
+#endif
+	if (!readMe)
+	{
+		printf("Usage: PiCartTool <options>, executed in order. The options are in ReadMe.md, not found at %s:\n", path.c_str());
+		printf("https://github.com/martinpiper/C64MegaCart/blob/main/PiCartTool/ReadMe.md\n");
+		return;
+	}
+	printf("Usage: PiCartTool <options>, executed in order (from %s)\n\n", path.c_str());
+	char line[4096];
+	bool inside = false;
+	while (fgets(line, sizeof(line), readMe))
+	{
+		if (line[0] == '#')
+		{
+			inside = strstr(line, "Command line arguments") != NULL || strstr(line, "Advanced configuration options") != NULL;
+			if (inside)
+			{
+				printf("%s", line + strspn(line, "# "));
+			}
+			continue;
+		}
+		if (inside)
+		{
+			printf("%s", line);
+		}
+	}
+	fclose(readMe);
 }
 
 int main(int argc, char** argv)
@@ -1089,6 +1267,21 @@ int main(int argc, char** argv)
 	FILE* fp;
 
 	auto start = std::chrono::steady_clock::now();
+
+	// Before the hardware is set up: no power on and no reset of the cartridges for them
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcasecmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+		{
+			PrintHelp(argv[0]);
+			return 0;
+		}
+		if (strcasecmp(argv[i], "--version") == 0)
+		{
+			PrintVersion();
+			return 0;
+		}
+	}
 
 	HardwareInit();
 	InitCartTool();
@@ -1154,10 +1347,18 @@ int main(int argc, char** argv)
 			argPos++;
 			continue;
 		}
+		// On by default, kept for the command lines that give it
 		if (strcasecmp(argv[argPos], "--gpiofast") == 0)
 		{
 			argPos++;
 			gpioFast = true;
+			gpioFastRequested = true;
+			continue;
+		}
+		if (strcasecmp(argv[argPos], "--gpioslow") == 0)
+		{
+			argPos++;
+			gpioFast = false;
 			continue;
 		}
 		// Before the power relay is switched on: the cartridges stay off
@@ -1231,7 +1432,7 @@ int main(int argc, char** argv)
 				SendChipCommandErase();
 			}
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				InterfaceControl::SetActiveSlot(slot);
 
@@ -1261,7 +1462,7 @@ int main(int argc, char** argv)
 			printf("Erasing...\n");
 			SendChipCommandErase();
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				InterfaceControl::SetActiveSlot(slot);
 				WaitForStatusRegisterEqual(0xff);
@@ -1307,6 +1508,9 @@ int main(int argc, char** argv)
 				{
 					break;
 				}
+				// The last bank of a file that is not a multiple of 8 KB: the rest of the buffer still holds the bank
+				// before. As $ff it is left out, so the flash stays erased behind the end of the file.
+				memset(bankData + numBytes, 0xff, sizeof(bankData) - numBytes);
 				printf("Got bytes %d for bank %d\n", numBytes, bank);
 
 				// Set the bank register
@@ -1353,8 +1557,9 @@ int main(int argc, char** argv)
 					// Data polling of all slots in passes: one pass sets ROML low once and reads every slot that is not done
 					// yet. With ROML low every slot drives its data, so the next slot only needs the latch update of the slot
 					// select (the data bus follows it in less than 100ns, the wait in GetInputByte() covers it).
-					int slotsNotDone = (1 << activeSlots) - 1;
+					int slotsNotDone = usedSlotMask;
 					int iterations = 0;
+					std::chrono::steady_clock::time_point pollTimeoutStart;
 					while (slotsNotDone != 0)
 					{
 						C64Control::SetLowROM();
@@ -1364,7 +1569,7 @@ int main(int argc, char** argv)
 						{
 							delayMicroseconds(1);
 						}
-						for (int slot = 0; slot < activeSlots; slot++)
+						for (int slot : UsedSlots())
 						{
 							if ((slotsNotDone & (1 << slot)) == 0)
 							{
@@ -1383,9 +1588,21 @@ int main(int argc, char** argv)
 						}
 						C64Control::ClearLowROM();
 						C64Control::UpdateLatch();
+						// Gives up after 100 passes and then kPollTimeoutMicroseconds more. The passes alone are a short time on
+						// a fast Pi (on the Pi 5 much less than on the Zero 2W), the time makes sure a slow byte is not reported
+						// as an error. The clock is only read from pass 100 on, so the normal case costs nothing.
 						if (slotsNotDone != 0 && iterations++ > 100)
 						{
-							for (int slot = 0; slot < activeSlots; slot++)
+							auto now = std::chrono::steady_clock::now();
+							if (iterations == 102)
+							{
+								pollTimeoutStart = now;
+							}
+							if (std::chrono::duration_cast<std::chrono::microseconds>(now - pollTimeoutStart).count() < kPollTimeoutMicroseconds)
+							{
+								continue;
+							}
+							for (int slot : UsedSlots())
 							{
 								if ((slotsNotDone & (1 << slot)) != 0)
 								{
@@ -1436,7 +1653,7 @@ int main(int argc, char** argv)
 
 			SendChipCommandBlockErase();
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				InterfaceControl::SetActiveSlot(slot);
 				WaitForStatusRegisterEqual(0xff);
@@ -1519,6 +1736,38 @@ int main(int argc, char** argv)
 			InterfaceControl::ClearLED2();
 			InterfaceControl::UpdateLatch();
 
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--testefram") == 0)
+		{
+			argPos++;
+			if (!EFRamTest())
+			{
+				sExitCode = 1;
+			}
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--ef1id") == 0)
+		{
+			argPos++;
+			if (!EF1ID())
+			{
+				sExitCode = 1;
+			}
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--readef1") == 0 || strcasecmp(argv[argPos], "--writeef1") == 0)
+		{
+			bool write = strcasecmp(argv[argPos], "--writeef1") == 0;
+			argPos++;
+			if (!(write ? EF1Write(argv[argPos]) : EF1Read(argv[argPos])))
+			{
+				sExitCode = 1;
+			}
+			argPos++;
 			continue;
 		}
 
@@ -1748,6 +1997,14 @@ int main(int argc, char** argv)
 			}
 			EF3Erase("erases slots 1 to 7, all KERNALs and all freezers, and sets all names back. The EF3 menu and EasyProg stay", sectors, nameIndices, "ERASE ALL");
 
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--ef3dir") == 0)
+		{
+			argPos++;
+			EF3SelectProgrammerSlot(theActiveSlot);
+			EF3PrintDirectory();
 			continue;
 		}
 
@@ -2021,6 +2278,88 @@ int main(int argc, char** argv)
 			continue;
 		}
 
+		// --poweron and --run keep the power of the cartridges on (switched on above, the reset is released), for
+		// cartridges that are updated over USB and get their power only from the slot: TeensyROM, Kung Fu Flash
+		if (strcasecmp(argv[argPos], "--poweron") == 0)
+		{
+			argPos++;
+			if (argPos >= argc)
+			{
+				printf("--poweron needs the number of seconds\n");
+				sExitCode = 1;
+				break;
+			}
+			int seconds = std::stoi(argv[argPos], nullptr, 0);
+			argPos++;
+			printf("Power on for %d seconds\n", seconds);
+			fflush(stdout);
+			for (int i = 0; i < seconds * 10; i++)
+			{
+				delay(100);
+			}
+			printf("Power on done\n");
+			continue;
+		}
+
+		if (strcasecmp(argv[argPos], "--run") == 0)
+		{
+			argPos++;
+			if (argPos >= argc)
+			{
+				printf("--run needs a command\n");
+				sExitCode = 1;
+				break;
+			}
+			const char* command = argv[argPos];
+			argPos++;
+			// A long command (a script of several lines) only with the start of its first line
+			std::string shown = command;
+			size_t newline = shown.find('\n');
+			if (newline != std::string::npos || shown.size() > 200)
+			{
+				shown = shown.substr(0, std::min<size_t>(newline, 200)) + " ...";
+			}
+			printf("Running with the power on: %s\n", shown.c_str());
+			// A firmware update of a TeensyROM: its bootloader only starts with the program button of the Teensy, the
+			// soft reboot (-s) of teensy_loader_cli does not reach it
+			bool teensy = strstr(command, "teensy_loader_cli") != NULL;
+			if (teensy)
+			{
+				if (!TeensyUdevRuleInstalled())
+				{
+					printf("Note: the udev rule of PJRC is missing (https://www.pjrc.com/teensy/00-teensy.rules as /etc/udev/rules.d/00-teensy.rules)\n");
+				}
+				if (strstr(command, " -w") == NULL)
+				{
+					printf("Note: without -w teensy_loader_cli does not wait for the bootloader, the button can only be pressed after the power is on\n");
+				}
+				printf("Teensy: press the white program button on the Teensy module now (TeensyROM in a case: through the small hole of the case).\n");
+				printf("Its bootloader starts with it, teensy_loader_cli -w waits for it and writes the file in about 20 s. Leave the power on until it ends.\n");
+			}
+			fflush(stdout);
+			int status = system(command);
+			if (status == -1 || !WIFEXITED(status))
+			{
+				printf("The command could not be run or was stopped\n");
+				sExitCode = 1;
+			}
+			else if (WEXITSTATUS(status) != 0)
+			{
+				printf("The command exited with %d\n", WEXITSTATUS(status));
+				if (teensy)
+				{
+					printf("If teensy_loader_cli said \"error writing to Teensy\": use teensy_loader_cli 2.3 or newer, 2.2 gives up while the Teensy 4.1 erases.\n");
+					printf("If lsusb shows no Teensy any more after a failed write (its red LED blinks), switch the Pi off and on before the next try: the USB port of a Pi Zero can hang then.\n");
+				}
+				sExitCode = 1;
+			}
+			else
+			{
+				printf("The command exited with 0\n");
+			}
+			continue;
+		}
+
 
 		if (strcasecmp(argv[argPos], "--dump") == 0 || strcasecmp(argv[argPos], "-d") == 0)
 		{
@@ -2033,7 +2372,7 @@ int main(int argc, char** argv)
 			InterfaceControl::UpdateLatch();
 
 			int maxDelayNeeded = 0;
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				printf("Dumping slot %d\n", slot + 1);
 				InterfaceControl::SetActiveSlot(slot);
@@ -2097,7 +2436,7 @@ int main(int argc, char** argv)
 			InterfaceControl::SetLED2();
 			InterfaceControl::UpdateLatch();
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				printf("Dumping serial slot %d\n", slot + 1);
 				InterfaceControl::SetActiveSlot(slot);
@@ -2231,7 +2570,7 @@ int main(int argc, char** argv)
 			C64Control::ClearHighROM();
 			C64Control::UpdateLatch();
 
-			for (int slot = 0; slot < activeSlots; slot++)
+			for (int slot : UsedSlots())
 			{
 				InterfaceControl::SetActiveSlot(slot);
 
@@ -2280,8 +2619,32 @@ int main(int argc, char** argv)
 		if (strcasecmp(argv[argPos], "--slots") == 0 || strcasecmp(argv[argPos], "-s") == 0)
 		{
 			argPos++;
-			activeSlots = std::stoi(argv[argPos], nullptr, 0);
+			int count = std::stoi(argv[argPos], nullptr, 0);
 			argPos++;
+			if (count < 1 || count > 5)
+			{
+				printf("--slots needs 1 to 5\n");
+				sExitCode = 1;
+				break;
+			}
+			SetSlotCount(count);
+
+			continue;
+		}
+
+		// --slotlist 1,3,5: only these programmer slots are used, for example with cartridges in a case that do not
+		// fit next to each other. All slots still get every write; erasing and the data polling wait only for these.
+		if (strcasecmp(argv[argPos], "--slotlist") == 0)
+		{
+			argPos++;
+			if (argPos >= argc || !SetSlotList(argv[argPos]))
+			{
+				printf("--slotlist needs a list of the slots 1 to 5, for example 1,3,5\n");
+				sExitCode = 1;
+				break;
+			}
+			argPos++;
+			printf("Programmer slots used: %s\n", UsedSlotsText().c_str());
 
 			continue;
 		}
@@ -2416,7 +2779,7 @@ int main(int argc, char** argv)
 		}
 
 
-		printf("Unknown argument: %s\n", argv[argPos]);
+		printf("Unknown argument: %s (PiCartTool --help shows the options)\n", argv[argPos]);
 		argPos++;
 	}
 

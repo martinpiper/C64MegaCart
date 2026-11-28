@@ -2,11 +2,75 @@
 #include <time.h>
 #include <wiringPi.h>
 #include "Hardware.h"
+#include "CartridgePort.h"
 
 static int sLatchStates[5] = { -1,-1,-1,0,0 };
 
 int activeSlots = 1;
 int theActiveSlot = 0;
+int usedSlotMask = 1;
+
+std::vector<int> UsedSlots(void)
+{
+	std::vector<int> slots;
+	for (int slot = 0; slot < 5; slot++)
+	{
+		if (usedSlotMask & (1 << slot))
+		{
+			slots.push_back(slot);
+		}
+	}
+	return slots;
+}
+
+std::string UsedSlotsText(void)
+{
+	std::vector<int> slots = UsedSlots();
+	if (slots.size() > 1 && slots.back() - slots.front() + 1 == (int) slots.size())
+	{
+		return std::to_string(slots.front() + 1) + " to " + std::to_string(slots.back() + 1);
+	}
+	std::string text;
+	for (int slot : slots)
+	{
+		text += (text.empty() ? "" : ", ") + std::to_string(slot + 1);
+	}
+	return text;
+}
+
+bool SetSlotList(const char* list)
+{
+	int mask = 0;
+	for (const char* p = list; *p; p++)
+	{
+		if (*p >= '1' && *p <= '5')
+		{
+			mask |= 1 << (*p - '1');
+		}
+		else if (*p != ',' && *p != '-' && *p != '+' && *p != ' ')
+		{
+			return false;
+		}
+	}
+	if (mask == 0)
+	{
+		return false;
+	}
+	usedSlotMask = mask;
+	// The number of slots used, for the code that only asks whether more than one slot is used
+	activeSlots = 0;
+	for (int slot = 0; slot < 5; slot++)
+	{
+		activeSlots += (mask >> slot) & 1;
+	}
+	return true;
+}
+
+void SetSlotCount(int count)
+{
+	activeSlots = count;
+	usedSlotMask = (1 << count) - 1;
+}
 
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 bool flashWriteCommandIsHiROM = true;
@@ -232,8 +296,8 @@ namespace InterfaceControl
 		sLatchStates[kLatch] &= ~(0x07 << 1);
 		sLatchStates[kLatch] |= slot << 1;
 
-		// For performance reasons we only do this when more than one active slot is configured
-		if (activeSlots > 1)
+		// For performance reasons we only do this when another slot than slot 1 alone is used
+		if (usedSlotMask != 1)
 		{
 			UpdateLatch();
 		}

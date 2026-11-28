@@ -80,6 +80,8 @@
     <ClCompile Include="EF3.cpp" />
     <ClCompile Include="Hardware.cpp" />
     <ClCompile Include="IDE64.cpp" />
+    <ClCompile Include="EasyFlash1.cpp" />
+    <ClCompile Include="EFRam.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProgrammerHardware.cpp" />
   </ItemGroup>
@@ -101,6 +103,8 @@
     <ClInclude Include="EF3.h" />
     <ClInclude Include="Hardware.h" />
     <ClInclude Include="IDE64.h" />
+    <ClInclude Include="EasyFlash1.h" />
+    <ClInclude Include="EFRam.h" />
     <ClInclude Include="ProgrammerHardware.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">

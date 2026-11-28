@@ -366,7 +366,7 @@ bool SerialEEPROM_WaitForReady(void)
 
 void SerialEEPROM_WaitForReadyAllslots(bool& gotError)
 {
-	for (int slot = 0; slot < activeSlots; slot++)
+	for (int slot : UsedSlots())
 	{
 		if (gotError)
 		{

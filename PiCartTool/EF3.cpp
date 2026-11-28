@@ -362,7 +362,7 @@ bool EF3LoadSlotFile(const char* filename, unsigned char* slotData)
 
 // Reads 8KB of ROML or ROMH from the selected slot and bank. ROML or ROMH stays active for the whole 8KB, because the
 // CPLD decodes reads asynchronously, so only the address changes from byte to byte.
-void EF3ReadCurrentChip(bool high, unsigned char* data, int& maxDelayNeeded)
+void EF3ReadCurrentChip(bool high, unsigned char* data)
 {
 	C64Control::ClearDataLatchOut();
 	C64Control::SetRead();
@@ -379,21 +379,10 @@ void EF3ReadCurrentChip(bool high, unsigned char* data, int& maxDelayNeeded)
 	for (int address = 0; address < kEF3BankSize; address++)
 	{
 		DataLatchOut::SetAddress(address);
-		// The EasyFlash 3 needs more time until D0 is valid, without this delay it reads as 1 in most banks
-		delayMicroseconds(1);
-		// Two reads must be the same, otherwise the delay is increased progressively
-		int gotPrevious = GetInputByte();
-		int gotNow = GetInputByte();
-		int progressiveDelay = 0;
-		while (gotPrevious != gotNow)
-		{
-			progressiveDelay++;
-			maxDelayNeeded = std::max(maxDelayNeeded, progressiveDelay);
-			delayMicroseconds(progressiveDelay);
-			gotPrevious = gotNow;
-			gotNow = GetInputByte();
-		}
-		data[address] = (unsigned char)gotNow;
+		// GetInputByte() waits 200ns for the data bus and reads D0 first. After the address change D0 sometimes still
+		// has the value of the address before, so D0 is read again after the other bits (about 1us after the address).
+		int value = GetInputByte();
+		data[address] = (unsigned char)((value & 0xfe) | (digitalRead(0) == HIGH ? 1 : 0));
 	}
 
 	C64Control::ClearLowROM();
@@ -408,7 +397,6 @@ bool EF3ReadImage(unsigned char* image)
 	InterfaceControl::UpdateLatch();
 
 	printf("Reading EasyFlash 3...\n");
-	int maxDelayNeeded = 0;
 	bool gotError = false;
 	for (int slot = 0; slot < kEF3NumSlots && !gotError; slot++)
 	{
@@ -433,11 +421,10 @@ bool EF3ReadImage(unsigned char* image)
 			SetDataIO1WithPHI2Edge(0, bank);
 			for (int chip = 0; chip < 2; chip++)
 			{
-				EF3ReadCurrentChip(chip == 1, image + slot * kEF3SlotSize + (bank * 2 + chip) * kEF3BankSize, maxDelayNeeded);
+				EF3ReadCurrentChip(chip == 1, image + slot * kEF3SlotSize + (bank * 2 + chip) * kEF3BankSize);
 			}
 		}
 	}
-	printf("maxDelayNeeded = %d\n", maxDelayNeeded);
 
 	InterfaceControl::ClearLED2();
 	InterfaceControl::UpdateLatch();
@@ -449,8 +436,7 @@ bool EF3ReadImage(unsigned char* image)
 void EF3ReadChip(int bank, bool high, unsigned char* data)
 {
 	SetDataIO1WithPHI2Edge(0, bank);
-	int maxDelayNeeded = 0;
-	EF3ReadCurrentChip(high, data, maxDelayNeeded);
+	EF3ReadCurrentChip(high, data);
 }
 
 // Reads the menu directory of the selected programmer slot
@@ -470,17 +456,55 @@ bool EF3ReadDirectory(unsigned char* directory)
 	return true;
 }
 
-// The programmer slots with an EasyFlash 3 that is written: slot 1 to n of --slots n, or only the slot of --activeslot.
+// --ef3dir: the names of the menu directory of the EF3 in the slot of --activeslot, and which slots are empty (bank 0
+// ROML only $ff). Reads the directory bank and one bank of each slot, much faster than --readef3.
+void EF3PrintDirectory(void)
+{
+	static unsigned char directory[kEF3BankSize];
+	if (!EF3ReadDirectory(directory))
+	{
+		return;
+	}
+	static unsigned char bank0[kEF3BankSize];
+	for (int slot = 1; slot < kEF3NumSlots; slot++)
+	{
+		bool empty = false;
+		if (EF3SetSlotAndBank(slot, 0))
+		{
+			EF3ReadChip(0, false, bank0);
+			empty = true;
+			for (int i = 0; i < kEF3BankSize && empty; i++)
+			{
+				empty = bank0[i] == 0xff;
+			}
+		}
+		printf("EF3 slot %d: %s%s\n", slot, EF3DirectoryName(directory, slot).c_str(), empty ? " (empty)" : "");
+	}
+	bool fc3 = EF3MenuHasFC3(directory);
+	for (int pass = 0; pass < 2; pass++)
+	{
+		bool kernal = pass == 0;
+		for (int number = 1; number <= (kernal ? 8 : (fc3 ? 4 : 3)); number++)
+		{
+			EF3Area area;
+			if (EF3GetArea(kernal, number, area))
+			{
+				printf("EF3 %s %d: %s\n", kernal ? "KERNAL" : "freezer", number, EF3DirectoryName(directory, area.directoryIndex).c_str());
+			}
+		}
+	}
+	EF3SetSlotAndBank(0, 0);
+}
+
+// The programmer slots with an EasyFlash 3 that is written: slot 1 to n of --slots n or the slots of --slotlist, or only
+// the slot of --activeslot.
 // All slots get every write at the same time, so all of them get the same data. Reads come from one slot at a time.
 std::vector<int> EF3ProgrammerSlots(void)
 {
 	std::vector<int> slots;
-	if (activeSlots > 1)
+	if (usedSlotMask != 1)
 	{
-		for (int slot = 0; slot < activeSlots; slot++)
-		{
-			slots.push_back(slot);
-		}
+		slots = UsedSlots();
 	}
 	else
 	{
@@ -528,7 +552,7 @@ bool EF3CheckOtherProgrammerSlots(void)
 	auto isEF3 = [&](int programmerSlot) { return manufacturer[programmerSlot] == 0xc2 && device[programmerSlot] == 0xcb; };
 
 	// Only without --slots the content of another EF3 is compared, with the EF3 in the slot of --activeslot
-	bool compare = activeSlots <= 1 && theActiveSlot < kMaxProgrammerSlots && isEF3(theActiveSlot);
+	bool compare = usedSlotMask == 1 && theActiveSlot < kMaxProgrammerSlots && isEF3(theActiveSlot);
 	static unsigned char fingerprint[kMaxProgrammerSlots][kEF3NumSlots * kEF3BankSize];
 	for (int slot = 0; slot < kEF3NumSlots && compare; slot++)
 	{
@@ -541,8 +565,7 @@ bool EF3CheckOtherProgrammerSlots(void)
 				continue;
 			}
 			EF3SelectProgrammerSlot(programmerSlot);
-			int maxDelayNeeded = 0;
-			EF3ReadCurrentChip(false, fingerprint[programmerSlot] + slot * kEF3BankSize, maxDelayNeeded);
+			EF3ReadCurrentChip(false, fingerprint[programmerSlot] + slot * kEF3BankSize);
 		}
 	}
 	EF3SelectProgrammerSlot(theActiveSlot);
@@ -613,9 +636,9 @@ bool EF3CheckChips(void)
 	{
 		printf("Nothing was written\n");
 	}
-	else if (activeSlots > 1)
+	else if (usedSlotMask != 1)
 	{
-		printf("EasyFlash 3 found in programmer slots 1 to %d, all of them get the same data\n", activeSlots);
+		printf("EasyFlash 3 found in programmer slots %s, all of them get the same data\n", UsedSlotsText().c_str());
 	}
 	return allFound;
 }
@@ -716,8 +739,7 @@ bool EF3SelectBankChecked(int slot, int bank, bool high)
 		for (int programmerSlot : unproven)
 		{
 			EF3SelectProgrammerSlot(programmerSlot);
-			int maxDelayNeeded = 0;
-			EF3ReadCurrentChip(high, other[programmerSlot], maxDelayNeeded);
+			EF3ReadCurrentChip(high, other[programmerSlot]);
 			allReferencesEmpty[programmerSlot] = allReferencesEmpty[programmerSlot] && IsEmpty(other[programmerSlot], kEF3BankSize);
 		}
 		SetDataIO1WithPHI2Edge(0, bank);
@@ -725,8 +747,7 @@ bool EF3SelectBankChecked(int slot, int bank, bool high)
 		for (int programmerSlot : unproven)
 		{
 			EF3SelectProgrammerSlot(programmerSlot);
-			int maxDelayNeeded = 0;
-			EF3ReadCurrentChip(high, target, maxDelayNeeded);
+			EF3ReadCurrentChip(high, target);
 			if (memcmp(target, other[programmerSlot], kEF3BankSize) == 0)
 			{
 				stillUnproven.push_back(programmerSlot);
@@ -870,8 +891,7 @@ bool EF3ProgramInCurrentBank(bool high, const unsigned char* data)
 	for (int programmerSlot : EF3ProgrammerSlots())
 	{
 		EF3SelectProgrammerSlot(programmerSlot);
-		int maxDelayNeeded = 0;
-		EF3ReadCurrentChip(high, got, maxDelayNeeded);
+		EF3ReadCurrentChip(high, got);
 		for (int address = 0; address < kEF3BankSize; address++)
 		{
 			if (got[address] != data[address])
@@ -891,7 +911,6 @@ bool EF3ProgramInCurrentBank(bool high, const unsigned char* data)
 bool EF3WriteSector(int slot, int firstBank, int numBanks, bool high, const std::function<const unsigned char* (int)>& target, bool& changed, bool& skipped)
 {
 	static unsigned char current[kEF3BankSize];
-	int maxDelayNeeded = 0;
 	changed = false;
 	skipped = false;
 
@@ -906,7 +925,7 @@ bool EF3WriteSector(int slot, int firstBank, int numBanks, bool high, const std:
 		for (int programmerSlot : EF3ProgrammerSlots())
 		{
 			EF3SelectProgrammerSlot(programmerSlot);
-			EF3ReadCurrentChip(high, current, maxDelayNeeded);
+			EF3ReadCurrentChip(high, current);
 			same = same && memcmp(current, target(bank), kEF3BankSize) == 0;
 			empty = empty && IsEmpty(current, kEF3BankSize);
 		}
@@ -1010,8 +1029,7 @@ bool EF3ReadDirectorySector(unsigned char* directory)
 		for (int programmerSlot : EF3ProgrammerSlots())
 		{
 			EF3SelectProgrammerSlot(programmerSlot);
-			int maxDelayNeeded = 0;
-			EF3ReadCurrentChip(false, chip, maxDelayNeeded);
+			EF3ReadCurrentChip(false, chip);
 			if (bank != kEF3DirectoryBank)
 			{
 				if (!IsEmpty(chip, kEF3BankSize))

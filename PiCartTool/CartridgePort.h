@@ -1,7 +1,21 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 extern int activeSlots;
 extern int theActiveSlot;
+// The programmer slots that are used, bit 0 for slot 1: slots 1 to n of --slots n, or the slots of --slotlist
+extern int usedSlotMask;
+
+// The used programmer slots (zero based), in order
+std::vector<int> UsedSlots(void);
+// "1 to 3" or "1, 3, 5", for messages
+std::string UsedSlotsText(void);
+// --slotlist: "1,3,5" (also "1-3-5" or "1+3+5"), slots 1 to 5. Returns false for a wrong list.
+bool SetSlotList(const char* list);
+// --slots n: slots 1 to n
+void SetSlotCount(int count);
 
 // Some cartridges expect to see HIROM and some expect to see LOROM when writing to the flash
 extern bool flashWriteCommandIsHiROM;

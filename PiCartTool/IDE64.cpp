@@ -60,7 +60,7 @@ static const Ide64FlashChip kIde64FlashChips[] = {
 };
 
 static int sIde64Bank = -1;
-// The exit code of PiCartTool: 1 when an IDE64 option failed
+// The exit code of PiCartTool: 1 when an IDE64 or EasyFlash 1 option failed
 int sExitCode = 0;
 
 void Ide64Cycle(int address, int value, void (*select)(void), void (*deselect)(void))

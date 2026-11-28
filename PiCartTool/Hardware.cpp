@@ -16,7 +16,10 @@ static volatile std::atomic<int> sCachedSignals[28];
 // --gpiofast: the data pins D0..7 (GPIO 0-7) are read with one access of the level register, the output byte (GPIO 8-15)
 // is written with one access of the set and one of the clear register, instead of 8 calls of digitalRead()/digitalWrite().
 // The registers are the ones wiringPi maps: BCM2835 to BCM2711 (Pi 1 to 4, Zero 2W) or the RIO block of the RP1 (Pi 5).
-bool gpioFast = false;
+// On by default; --gpioslow turns it off. Without mapped registers (the simulator, an unknown Pi) the single calls are
+// used, with a note only when --gpiofast was given.
+bool gpioFast = true;
+bool gpioFastRequested = false;
 
 // BCM283x/BCM2711: GPSET0, GPCLR0, GPLEV0 (in 32 bit words)
 static const int kBcmSet0 = 7;
@@ -69,7 +72,7 @@ void HardwareInit()
 	{
 		SetupCounter();
 	}
-	if (gpioFast && sLevelRegister == nullptr)
+	if (gpioFast && gpioFastRequested && sLevelRegister == nullptr)
 	{
 		printf("--gpiofast: the GPIO registers are not mapped by wiringPi, using digitalRead()/digitalWrite()\n");
 	}
