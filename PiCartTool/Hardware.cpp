@@ -177,8 +177,8 @@ static void SetupCounter(void)
 	{
 	}
 	unsigned long long ticks = ReadCounter() - first;
-	double measured = ticks / (NanosecondsSince(start) / 1e9);
-	if (measured < sCounterFrequency * 0.9 || measured > sCounterFrequency * 1.1)
+	double measured = double(ticks) / (NanosecondsSince(start) / 1e9);
+	if (measured < double(sCounterFrequency) * 0.9 || measured > double(sCounterFrequency) * 1.1)
 	{
 		printf("--gpiofast: the ARM timer runs at %.0f Hz instead of %llu Hz, using clock_gettime()\n", measured, sCounterFrequency);
 		return;
@@ -315,7 +315,7 @@ static double NanosecondsSince(const timespec& start)
 {
 	timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	return (now.tv_sec - start.tv_sec) * 1e9 + (now.tv_nsec - start.tv_nsec);
+	return double(now.tv_sec - start.tv_sec) * 1e9 + double(now.tv_nsec - start.tv_nsec);
 }
 
 // --gpiotest: measures the GPIO accesses with and without --gpiofast and checks that both give the same levels.
